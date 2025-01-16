@@ -1,29 +1,39 @@
-use std::collections::HashMap;
+mod api;
+mod templates;
+
+use std::{collections::HashMap, time::Duration};
 
 use askama::Template;
 use axum::{
-    extract,
-    http::StatusCode,
-    response::{Html, IntoResponse, Response},
+    extract::{Query, State},
+    response::{IntoResponse, Response},
     routing::get,
     Json, Router,
 };
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+
+use moka::future::Cache;
 
 lazy_static! {
     #[derive(Debug)]
-    static ref LANG_TO_COLORS: HashMap<String, Value>  =
+    static ref LANG_TO_COLORS: HashMap<String, String>  =
         serde_json::from_str(include_str!("../data/lang2hex.json")).unwrap();
 }
 
+const CACHE_TTL: Duration = Duration::from_secs(7200);
+
 #[tokio::main]
 async fn main() {
-    // build our application with a route
+    let waka_cache: Cache<String, String> = Cache::builder()
+        .time_to_live(CACHE_TTL)
+        .max_capacity(4096)
+        .build();
+
     let app = Router::new()
         .route("/v1/top-langs/wakatime", get(top_langs))
-        .route("/v1/health", get(health));
+        .route("/v1/health", get(health))
+        .with_state(waka_cache);
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:7674")
         .await
@@ -47,46 +57,77 @@ async fn health() -> impl IntoResponse {
     Json(data)
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[allow(dead_code)]
 struct Params {
     username: String,
 }
 
-async fn top_langs(extract::Query(params): extract::Query<Params>) -> impl IntoResponse {
-    // println!("{:#?}", *LANG_TO_COLORS);
-    let stats = [
-        LanguageStat {
-            name: "JavaScript".to_string(),
-            color: "#F0DB4F".to_string(),
-            percent: 26.52,
-        },
-        LanguageStat {
-            name: "TypeScript".to_string(),
-            color: "#007ACC".to_string(),
-            percent: 16.82,
-        },
-        LanguageStat {
-            name: "Python".to_string(),
-            color: "#387EB8".to_string(),
-            percent: 16.31,
-        },
-        LanguageStat {
-            name: "Svelte".to_string(),
-            color: "#FF3E00".to_string(),
-            percent: 6.63,
-        },
-        LanguageStat {
-            name: "Markdown".to_string(),
-            color: "#42A5F5".to_string(),
-            percent: 5.86,
-        },
-        LanguageStat {
-            name: "JSON".to_string(),
-            color: "#424445".to_string(),
-            percent: 4.19,
-        },
-    ];
+async fn get_top_langs_by_waka(
+    waka_cache: Cache<String, String>,
+    username: &String,
+) -> Result<Vec<LanguageStat>, String> {
+    let cache_key = format!("wakatime:langs:{username}");
+    if let Some(cached) = waka_cache.get(&cache_key).await {
+        let langs = serde_json::from_str(&cached).unwrap();
+        return Ok(langs);
+    }
+
+    let waka_stats = api::wakatime::get_stats(username).await;
+    if !waka_stats.is_ok() {
+        return Err("FailedGetStats".to_string());
+    }
+
+    let languages = waka_stats.unwrap().data.languages;
+    let first_languages = match languages.first_chunk::<6>() {
+        Some(langs) => langs,
+        None => {
+            return Err("FailedFindLanguages".to_string());
+        }
+    };
+
+    let top_langs: Vec<LanguageStat> = first_languages
+        .iter()
+        .map(|lang| LanguageStat {
+            name: lang.name.clone(),
+            color: match LANG_TO_COLORS.get(&lang.name.to_lowercase()) {
+                None => "#818181".to_string(),
+                Some(color) => color.clone(),
+            },
+            percent: lang.percent,
+        })
+        .collect();
+
+    let cache_body = serde_json::to_string(&top_langs).unwrap();
+    waka_cache.insert(cache_key, cache_body).await;
+
+    Ok(top_langs)
+}
+
+async fn top_langs(
+    State(waka_cache): State<Cache<String, String>>,
+    Query(params): Query<Params>,
+) -> Response {
+    let username = params.username;
+    let top_langs_res = get_top_langs_by_waka(waka_cache, &username).await;
+    if !top_langs_res.is_ok() {
+        let message = top_langs_res.unwrap_err();
+        let template = if message == "FailedGetStats" {
+            templates::ErrorTemplate {
+                first_line: "Failed to find a user.".to_string(),
+                second_line: "Check if it’s spelled correctly".to_string(),
+            }
+        } else {
+            templates::ErrorTemplate {
+                first_line: "Failed to find a user languages.".to_string(),
+                second_line: "Maybe he's inactive".to_string(),
+            }
+        };
+        let svg_template = templates::SVGTemplate(template);
+        return templates::SVGTemplate::<templates::ErrorTemplate>::into_response(svg_template);
+    }
+
+    let stats = top_langs_res.unwrap();
 
     let max_percent = stats.iter().fold(0.0, |acc, val| acc + val.percent);
     let max_width = 275.0;
@@ -134,46 +175,25 @@ async fn top_langs(extract::Query(params): extract::Query<Params>) -> impl IntoR
         .collect();
 
     let template = CompactLanguagesTemplate {
-        name: params.username,
+        name: username,
         stats_bar: bar_data.join("\n"),
         bar_legend: bar_legend.join("\n"),
     };
-    SVGTemplate(template)
+    let svg_template = templates::SVGTemplate(template);
+    templates::SVGTemplate::<CompactLanguagesTemplate>::into_response(svg_template)
 }
 
-#[derive(Template)]
-#[template(path = "compact/languages.html")]
-struct CompactLanguagesTemplate {
-    name: String,
-    stats_bar: String,
-    bar_legend: String,
-}
-
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 struct LanguageStat {
     name: String,
     color: String,
     percent: f32,
 }
 
-struct SVGTemplate<T>(T);
-
-impl<T> IntoResponse for SVGTemplate<T>
-where
-    T: Template,
-{
-    fn into_response(self) -> Response {
-        match self.0.render() {
-            Ok(html) => {
-                let body = Html(html);
-
-                ([("content-type", "image/svg+xml; charset=utf-8")], body).into_response()
-            }
-            Err(err) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to render template. Error: {err}"),
-            )
-                .into_response(),
-        }
-    }
+#[derive(Template)]
+#[template(path = "compact/languages.html")]
+pub struct CompactLanguagesTemplate {
+    name: String,
+    stats_bar: String,
+    bar_legend: String,
 }

@@ -6,11 +6,10 @@
 
 Current list of available cards:
 
-- none
+- [Wakatime languages (compact with progress)](https://github.com/anuraghazra/github-readme-stats)
 
 List of planned cards:
 
-- [WIP] [Wakatime languages (compact with progress)](https://github.com/anuraghazra/github-readme-stats)
 - [WIP] [Github Streak](https://github.com/DenverCoder1/github-readme-streak-stats)
 - [WIP] [Wakatime Streak](https://github.com/DenverCoder1/github-readme-streak-stats)
 - [WIP] [Github stats](https://github.com/anuraghazra/github-readme-stats)
