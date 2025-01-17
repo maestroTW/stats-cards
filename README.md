@@ -6,14 +6,19 @@
 
 Current list of available cards:
 
-- [Wakatime languages (compact with progress)](https://github.com/anuraghazra/github-readme-stats)
+- Wakatime languages (compact with progress)
+
+   <img src="https://stats-cards.toil.cc/v1/top-langs/wakatime?username=Toil" alt="demo" />
+
+- Github languages (compact with progress)
+
+   <img src="https://stats-cards.toil.cc/v1/top-langs/github?username=ilyhalight" alt="demo" />
 
 List of planned cards:
 
 - [WIP] [Github Streak](https://github.com/DenverCoder1/github-readme-streak-stats)
 - [WIP] [Wakatime Streak](https://github.com/DenverCoder1/github-readme-streak-stats)
 - [WIP] [Github stats](https://github.com/anuraghazra/github-readme-stats)
-- [WIP] [Github languages (compact with progress)](https://github.com/anuraghazra/github-readme-stats)
 - [WIP] [GitHub Extra Pins](https://github.com/anuraghazra/github-readme-stats)
 - [WIP] [GitHub Gist Pins](https://github.com/anuraghazra/github-readme-stats)
 - [WIP] Github Activity Graph
@@ -43,7 +48,7 @@ To run your own instance:
    2.2. Run live server:
 
    ```bash
-       cargo watch -x run
+   cargo watch -x run
    ```
 
 3. Run for Production:
