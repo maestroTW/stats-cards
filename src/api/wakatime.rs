@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 macro_rules! pub_struct {
     ($name:ident {$($field:ident: $t:ty,)*}) => {
-        #[derive(Debug, Deserialize, Serialize)]
+        #[derive(Deserialize, Serialize)]
         #[allow(dead_code)]
         pub struct $name {
             $(pub $field: $t),*
@@ -11,7 +11,7 @@ macro_rules! pub_struct {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Deserialize, Serialize)]
 #[allow(dead_code)]
 pub enum WakaTimeRange {
     #[serde(rename = "last_7_days")]
@@ -76,7 +76,7 @@ pub_struct! {  WakaTimeStats {
     is_os_usage_visible: bool,
 }}
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Deserialize, Serialize)]
 #[allow(dead_code)]
 pub struct WakaTimeResponse<T> {
     pub data: T,

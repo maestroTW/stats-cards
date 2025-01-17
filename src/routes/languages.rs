@@ -1,25 +1,24 @@
 use crate::api;
 use crate::templates;
 
-use std::collections::HashMap;
-
 use askama::Template;
 use axum::{
     extract::{Query, State},
     response::{IntoResponse, Response},
 };
 use lazy_static::lazy_static;
-use serde::{Deserialize, Serialize};
-
 use moka::future::Cache;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 lazy_static! {
-    #[derive(Debug)]
-    static ref LANG_TO_COLORS: HashMap<String, String>  =
+    static ref LANG_TO_COLORS: HashMap<String, String> =
         serde_json::from_str(include_str!("../../data/lang2hex.json")).unwrap();
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+const MAX_BAR_WIDTH: f32 = 275.0;
+
+#[derive(Deserialize, Serialize)]
 #[allow(dead_code)]
 pub struct Params {
     username: String,
@@ -92,7 +91,6 @@ pub async fn get_waka_top_langs(
     let stats = top_langs_res.unwrap();
 
     let max_percent = stats.iter().fold(0.0, |acc, val| acc + val.percent);
-    let max_bar_width = 275.0;
     let mut bar_start_x = 20.0;
     let mut column_start_y = 93;
 
@@ -100,7 +98,7 @@ pub async fn get_waka_top_langs(
         .iter()
         .map(|stat| {
             let stat_percent = stat.percent / max_percent;
-            let block_width = max_bar_width * stat_percent;
+            let block_width = MAX_BAR_WIDTH * stat_percent;
             let element = format!(
                 r##"<rect mask="url(#stats_mask)" x="{bar_start_x:.2}" y="61" width="{block_width:.2}" height="10" fill="{0}" />"##,
                 stat.color
