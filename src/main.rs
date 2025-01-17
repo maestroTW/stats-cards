@@ -1,25 +1,10 @@
 mod api;
+mod routes;
 mod templates;
 
-use std::{collections::HashMap, time::Duration};
-
-use askama::Template;
-use axum::{
-    extract::{Query, State},
-    response::{IntoResponse, Response},
-    routing::get,
-    Json, Router,
-};
-use lazy_static::lazy_static;
-use serde::{Deserialize, Serialize};
-
+use axum::{routing::get, Router};
 use moka::future::Cache;
-
-lazy_static! {
-    #[derive(Debug)]
-    static ref LANG_TO_COLORS: HashMap<String, String>  =
-        serde_json::from_str(include_str!("../data/lang2hex.json")).unwrap();
-}
+use std::time::Duration;
 
 const CACHE_TTL: Duration = Duration::from_secs(7200);
 
@@ -31,8 +16,11 @@ async fn main() {
         .build();
 
     let app = Router::new()
-        .route("/v1/top-langs/wakatime", get(top_langs))
-        .route("/v1/health", get(health))
+        .route(
+            "/v1/top-langs/wakatime",
+            get(routes::languages::get_waka_top_langs),
+        )
+        .route("/v1/health", get(routes::health::get_health))
         .with_state(waka_cache);
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:7674")
@@ -40,160 +28,4 @@ async fn main() {
         .unwrap();
     println!("🦀 Axum is running at {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
-}
-
-#[derive(Serialize)]
-struct Health {
-    version: String,
-    status: String,
-}
-
-async fn health() -> impl IntoResponse {
-    let data = Health {
-        version: "0.1.0".to_string(),
-        status: "ok".to_string(),
-    };
-
-    Json(data)
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-#[allow(dead_code)]
-struct Params {
-    username: String,
-}
-
-async fn get_top_langs_by_waka(
-    waka_cache: Cache<String, String>,
-    username: &String,
-) -> Result<Vec<LanguageStat>, String> {
-    let cache_key = format!("wakatime:langs:{username}");
-    if let Some(cached) = waka_cache.get(&cache_key).await {
-        let langs = serde_json::from_str(&cached).unwrap();
-        return Ok(langs);
-    }
-
-    let waka_stats = api::wakatime::get_stats(username).await;
-    if !waka_stats.is_ok() {
-        return Err("FailedGetStats".to_string());
-    }
-
-    let languages = waka_stats.unwrap().data.languages;
-    let first_languages = match languages.first_chunk::<6>() {
-        Some(langs) => langs,
-        None => {
-            return Err("FailedFindLanguages".to_string());
-        }
-    };
-
-    let top_langs: Vec<LanguageStat> = first_languages
-        .iter()
-        .map(|lang| LanguageStat {
-            name: lang.name.clone(),
-            color: match LANG_TO_COLORS.get(&lang.name.to_lowercase()) {
-                None => "#818181".to_string(),
-                Some(color) => color.clone(),
-            },
-            percent: lang.percent,
-        })
-        .collect();
-
-    let cache_body = serde_json::to_string(&top_langs).unwrap();
-    waka_cache.insert(cache_key, cache_body).await;
-
-    Ok(top_langs)
-}
-
-async fn top_langs(
-    State(waka_cache): State<Cache<String, String>>,
-    Query(params): Query<Params>,
-) -> Response {
-    let username = params.username;
-    let top_langs_res = get_top_langs_by_waka(waka_cache, &username).await;
-    if !top_langs_res.is_ok() {
-        let message = top_langs_res.unwrap_err();
-        let template = if message == "FailedGetStats" {
-            templates::ErrorTemplate {
-                first_line: "Failed to find a user.".to_string(),
-                second_line: "Check if it’s spelled correctly".to_string(),
-            }
-        } else {
-            templates::ErrorTemplate {
-                first_line: "Failed to find a user languages.".to_string(),
-                second_line: "Maybe he's inactive".to_string(),
-            }
-        };
-        let svg_template = templates::SVGTemplate(template);
-        return templates::SVGTemplate::<templates::ErrorTemplate>::into_response(svg_template);
-    }
-
-    let stats = top_langs_res.unwrap();
-
-    let max_percent = stats.iter().fold(0.0, |acc, val| acc + val.percent);
-    let max_width = 275.0;
-    let mut bar_start_x = 20.0;
-    let mut column_start_y = 93;
-
-    let bar_data: Vec<String> = stats
-        .iter()
-        .map(|stat| {
-            let stat_percent = stat.percent / max_percent;
-            let block_width = max_width * stat_percent;
-            let element = format!(
-                r##"<rect mask="url(#stats_mask)" x="{bar_start_x:.2}" y="61" width="{block_width:.2}" height="10" fill="{0}" />"##,
-                stat.color
-            );
-
-            bar_start_x += block_width;
-
-            element
-        })
-        .collect();
-
-    let bar_legend: Vec<String> = stats
-        .iter()
-        .enumerate()
-        .map(|(idx, stat)| {
-            let start_x = if idx < 3 { 20 } else { 175 };
-            let text_x = start_x + 18;
-            let start_y = column_start_y;
-            let text_y = start_y + 11;
-            let element = format!(
-                r##"
-                <g>
-                    <rect x="{start_x}" y="{start_y}" width="12" height="12" rx="6" fill="{0}" />
-                    <text x="{text_x}" y="{text_y}" fill="#CAD3F5" class="stat-text">{1} {2}%</text>
-                </g>
-            "##,
-                stat.color, stat.name, stat.percent,
-            );
-
-            column_start_y = if idx == 2 { 93 } else { column_start_y + 24 };
-
-            element
-        })
-        .collect();
-
-    let template = CompactLanguagesTemplate {
-        name: username,
-        stats_bar: bar_data.join("\n"),
-        bar_legend: bar_legend.join("\n"),
-    };
-    let svg_template = templates::SVGTemplate(template);
-    templates::SVGTemplate::<CompactLanguagesTemplate>::into_response(svg_template)
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct LanguageStat {
-    name: String,
-    color: String,
-    percent: f32,
-}
-
-#[derive(Template)]
-#[template(path = "compact/languages.html")]
-pub struct CompactLanguagesTemplate {
-    name: String,
-    stats_bar: String,
-    bar_legend: String,
 }
