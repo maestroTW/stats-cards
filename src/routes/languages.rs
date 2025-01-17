@@ -47,6 +47,9 @@ async fn get_top_langs_by_waka_intl(
         }
     };
 
+    let max_percent = first_languages
+        .iter()
+        .fold(0.0, |acc, val| acc + val.percent);
     let top_langs: Vec<LanguageStat> = first_languages
         .iter()
         .map(|lang| LanguageStat {
@@ -55,7 +58,7 @@ async fn get_top_langs_by_waka_intl(
                 None => "#818181".to_string(),
                 Some(color) => color.clone(),
             },
-            percent: lang.percent,
+            percent: 100.0 / (max_percent / lang.percent),
         })
         .collect();
 
@@ -90,14 +93,13 @@ pub async fn get_waka_top_langs(
 
     let stats = top_langs_res.unwrap();
 
-    let max_percent = stats.iter().fold(0.0, |acc, val| acc + val.percent);
     let mut bar_start_x = 20.0;
     let mut column_start_y = 93;
 
     let bar_data: Vec<String> = stats
         .iter()
         .map(|stat| {
-            let stat_percent = stat.percent / max_percent;
+            let stat_percent = stat.percent / 100.0;
             let block_width = MAX_BAR_WIDTH * stat_percent;
             let element = format!(
                 r##"<rect mask="url(#stats_mask)" x="{bar_start_x:.2}" y="61" width="{block_width:.2}" height="10" fill="{0}" />"##,
@@ -122,7 +124,7 @@ pub async fn get_waka_top_langs(
                 r##"
                 <g>
                     <rect x="{start_x}" y="{start_y}" width="12" height="12" rx="6" fill="{0}" />
-                    <text x="{text_x}" y="{text_y}" fill="#CAD3F5" class="stat-text">{1} {2}%</text>
+                    <text x="{text_x}" y="{text_y}" fill="#CAD3F5" class="stat-text">{1} {2:.2}%</text>
                 </g>
             "##,
                 stat.color, stat.name, stat.percent,
