@@ -13,3 +13,4 @@ lazy_static = "1.5.0"
 reqwest = { version = "0.12.12", features = ["json"] }
 moka = { version = "0.12.10", features = ["future"] }
 toml = "0.8.9"
+dotenv = "0.15.0"
