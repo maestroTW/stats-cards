@@ -2,6 +2,7 @@ mod api;
 mod routes;
 mod templates;
 
+use dotenv::dotenv;
 use axum::{routing::get, Router};
 use moka::future::Cache;
 use std::time::Duration;
@@ -10,9 +11,10 @@ const CACHE_TTL: Duration = Duration::from_secs(7200);
 
 #[tokio::main]
 async fn main() {
-    let waka_cache: Cache<String, String> = Cache::builder()
+    dotenv().ok();
+    let cache: Cache<String, String> = Cache::builder()
         .time_to_live(CACHE_TTL)
-        .max_capacity(4096)
+        .max_capacity(16384)
         .build();
 
     let app = Router::new()
@@ -20,8 +22,12 @@ async fn main() {
             "/v1/top-langs/wakatime",
             get(routes::languages::get_waka_top_langs),
         )
+        .route(
+            "/v1/top-langs/github",
+            get(routes::languages::get_github_top_langs),
+        )
         .route("/v1/health", get(routes::health::get_health))
-        .with_state(waka_cache);
+        .with_state(cache);
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:7674")
         .await

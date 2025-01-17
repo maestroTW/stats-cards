@@ -1,4 +1,5 @@
 use crate::api;
+use crate::api::github::GithubRepo;
 use crate::templates;
 
 use askama::Template;
@@ -17,6 +18,7 @@ lazy_static! {
 }
 
 const MAX_BAR_WIDTH: f32 = 275.0;
+const DEFAULT_LANG_COLOR: &str = "#818181";
 
 #[derive(Deserialize, Serialize)]
 #[allow(dead_code)]
@@ -25,21 +27,21 @@ pub struct Params {
 }
 
 async fn get_top_langs_by_waka_intl(
-    waka_cache: Cache<String, String>,
+    cache: Cache<String, String>,
     username: &String,
 ) -> Result<Vec<LanguageStat>, String> {
     let cache_key = format!("wakatime:langs:{username}");
-    if let Some(cached) = waka_cache.get(&cache_key).await {
+    if let Some(cached) = cache.get(&cache_key).await {
         let langs = serde_json::from_str(&cached).unwrap();
         return Ok(langs);
     }
 
-    let waka_stats = api::wakatime::get_stats(username).await;
-    if !waka_stats.is_ok() {
+    let stats = api::wakatime::get_stats(username).await;
+    if !stats.is_ok() {
         return Err("FailedGetStats".to_string());
     }
 
-    let languages = waka_stats.unwrap().data.languages;
+    let languages = stats.unwrap().data.languages;
     let first_languages = match languages.first_chunk::<6>() {
         Some(langs) => langs,
         None => {
@@ -55,7 +57,7 @@ async fn get_top_langs_by_waka_intl(
         .map(|lang| LanguageStat {
             name: lang.name.clone(),
             color: match LANG_TO_COLORS.get(&lang.name.to_lowercase()) {
-                None => "#818181".to_string(),
+                None => DEFAULT_LANG_COLOR.to_string(),
                 Some(color) => color.clone(),
             },
             percent: 100.0 / (max_percent / lang.percent),
@@ -63,17 +65,86 @@ async fn get_top_langs_by_waka_intl(
         .collect();
 
     let cache_body = serde_json::to_string(&top_langs).unwrap();
-    waka_cache.insert(cache_key, cache_body).await;
+    cache.insert(cache_key, cache_body).await;
 
     Ok(top_langs)
 }
 
-pub async fn get_waka_top_langs(
-    State(waka_cache): State<Cache<String, String>>,
-    Query(params): Query<Params>,
+async fn get_top_langs_by_github_intl(
+    cache: Cache<String, String>,
+    username: &String,
+) -> Result<Vec<LanguageStat>, String> {
+    let cache_key = format!("github:langs:{username}");
+    if let Some(cached) = cache.get(&cache_key).await {
+        let langs = serde_json::from_str(&cached).unwrap();
+        return Ok(langs);
+    }
+
+    let stats = api::github::get_stats(username).await;
+    if !stats.is_ok() {
+        return Err("FailedGetStats".to_string());
+    }
+
+    let languages_raw_data = stats.unwrap();
+
+    let languages_data: Vec<&GithubRepo> = languages_raw_data
+        .iter()
+        .filter(|&lang| !lang.language.is_none())
+        .collect();
+    if languages_data.len() == 0 {
+        return Err("FailedFindLanguages".to_string());
+    }
+
+    let mut langs_data: HashMap<String, i32> = HashMap::new();
+    for lang in languages_data {
+        let lang_name = lang.language.as_ref().unwrap();
+        langs_data
+            .entry(lang_name.to_string())
+            .and_modify(|count| *count += 1)
+            .or_insert(1);
+    }
+
+    let mut first_languages = Vec::new();
+    for _ in 0..6 {
+        let possible_data = langs_data.iter().max_by(|a, b| a.1.cmp(&b.1));
+        if possible_data.is_none() {
+            break;
+        }
+
+        let top_lang_data = possible_data.unwrap();
+        let lang_name = top_lang_data.0.to_string();
+        let min_lang = MinimalLanguageStat {
+            name: lang_name.to_string(),
+            count: top_lang_data.1.to_owned() as f32,
+        };
+
+        first_languages.push(min_lang);
+        langs_data.remove(&lang_name);
+    }
+
+    let max_percent = first_languages.iter().fold(0.0, |acc, val| acc + val.count);
+    let top_langs: Vec<LanguageStat> = first_languages
+        .iter()
+        .map(|lang| LanguageStat {
+            name: lang.name.clone(),
+            color: match LANG_TO_COLORS.get(&lang.name.to_lowercase()) {
+                None => DEFAULT_LANG_COLOR.to_string(),
+                Some(color) => color.clone(),
+            },
+            percent: 100.0 / (max_percent / lang.count),
+        })
+        .collect();
+
+    let cache_body = serde_json::to_string(&top_langs).unwrap();
+    cache.insert(cache_key, cache_body).await;
+
+    Ok(top_langs)
+}
+
+pub fn render_top_langs(
+    username: String,
+    top_langs_res: Result<Vec<LanguageStat>, String>,
 ) -> Response {
-    let username = params.username;
-    let top_langs_res = get_top_langs_by_waka_intl(waka_cache, &username).await;
     if !top_langs_res.is_ok() {
         let message = top_langs_res.unwrap_err();
         let template = if message == "FailedGetStats" {
@@ -92,7 +163,6 @@ pub async fn get_waka_top_langs(
     }
 
     let stats = top_langs_res.unwrap();
-
     let mut bar_start_x = 20.0;
     let mut column_start_y = 93;
 
@@ -145,11 +215,35 @@ pub async fn get_waka_top_langs(
     templates::SVGTemplate::<CompactLanguagesTemplate>::into_response(svg_template)
 }
 
+pub async fn get_waka_top_langs(
+    State(cache): State<Cache<String, String>>,
+    Query(params): Query<Params>,
+) -> Response {
+    let username = params.username;
+    let top_langs_res = get_top_langs_by_waka_intl(cache, &username).await;
+    render_top_langs(username, top_langs_res)
+}
+
+pub async fn get_github_top_langs(
+    State(cache): State<Cache<String, String>>,
+    Query(params): Query<Params>,
+) -> Response {
+    let username = params.username;
+    let top_langs_res = get_top_langs_by_github_intl(cache, &username).await;
+    render_top_langs(username, top_langs_res)
+}
+
 #[derive(Debug, Deserialize, Serialize)]
-struct LanguageStat {
+pub struct LanguageStat {
     name: String,
     color: String,
     percent: f32,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct MinimalLanguageStat {
+    name: String,
+    count: f32,
 }
 
 #[derive(Template)]
