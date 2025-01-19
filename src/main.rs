@@ -2,8 +2,8 @@ mod api;
 mod routes;
 mod templates;
 
-use dotenv::dotenv;
 use axum::{routing::get, Router};
+use dotenv::dotenv;
 use moka::future::Cache;
 use std::time::Duration;
 
@@ -25,6 +25,10 @@ async fn main() {
         .route(
             "/v1/top-langs/github",
             get(routes::languages::get_github_top_langs),
+        )
+        .route(
+            "/v1/activity/github",
+            get(routes::activity::get_github_activity_graph),
         )
         .route("/v1/health", get(routes::health::get_health))
         .with_state(cache);

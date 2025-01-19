@@ -14,6 +14,23 @@ Current list of available cards:
 
    <img src="https://stats-cards.toil.cc/v1/top-langs/github?username=ilyhalight" alt="demo" />
 
+- Github Activity Graph
+
+   <img src="https://stats-cards.toil.cc/v1/activity/github?username=ilyhalight&period=3_months&with_title=true" alt="demo" />
+
+  Support disabling title with param `with_title`:
+
+  - `true` (default)
+  - `false`
+
+  Support select period with param `period`:
+
+  - `3_months` (default)
+  - `6_months`
+  - `year`
+
+  \* Required GITHUB_TOKEN in `.env`
+
 List of planned cards:
 
 - [WIP] [Github Streak](https://github.com/DenverCoder1/github-readme-streak-stats)
@@ -21,7 +38,6 @@ List of planned cards:
 - [WIP] [Github stats](https://github.com/anuraghazra/github-readme-stats)
 - [WIP] [GitHub Extra Pins](https://github.com/anuraghazra/github-readme-stats)
 - [WIP] [GitHub Gist Pins](https://github.com/anuraghazra/github-readme-stats)
-- [WIP] Github Activity Graph
 
 \* links contain design examples
 
