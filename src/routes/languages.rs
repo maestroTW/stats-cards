@@ -1,5 +1,5 @@
-use crate::api;
 use crate::api::github::GithubRepo;
+use crate::api::{github, wakatime};
 use crate::templates;
 
 use askama::Template;
@@ -26,6 +26,27 @@ pub struct Params {
     username: String,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct LanguageStat {
+    name: String,
+    color: String,
+    percent: f32,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct MinimalLanguageStat {
+    name: String,
+    count: f32,
+}
+
+#[derive(Template)]
+#[template(path = "compact/languages.html")]
+pub struct CompactLanguagesTemplate {
+    name: String,
+    stats_bar: String,
+    bar_legend: String,
+}
+
 async fn get_top_langs_by_waka_intl(
     cache: Cache<String, String>,
     username: &String,
@@ -36,9 +57,9 @@ async fn get_top_langs_by_waka_intl(
         return Ok(langs);
     }
 
-    let stats = api::wakatime::get_stats(username).await;
+    let stats = wakatime::get_stats(username).await;
     if !stats.is_ok() {
-        return Err("FailedGetStats".to_string());
+        return Err("FailedFindUser".to_string());
     }
 
     let languages = stats.unwrap().data.languages;
@@ -80,9 +101,9 @@ async fn get_top_langs_by_github_intl(
         return Ok(langs);
     }
 
-    let stats = api::github::get_stats(username).await;
+    let stats = github::get_stats(username).await;
     if !stats.is_ok() {
-        return Err("FailedGetStats".to_string());
+        return Err("FailedFindUser".to_string());
     }
 
     let languages_raw_data = stats.unwrap();
@@ -147,7 +168,7 @@ pub fn render_top_langs(
 ) -> Response {
     if !top_langs_res.is_ok() {
         let message = top_langs_res.unwrap_err();
-        let template = if message == "FailedGetStats" {
+        let template = if message == "FailedFindUser" {
             templates::ErrorTemplate {
                 first_line: "Failed to find a user.".to_string(),
                 second_line: "Check if it’s spelled correctly".to_string(),
@@ -231,25 +252,4 @@ pub async fn get_github_top_langs(
     let username = params.username;
     let top_langs_res = get_top_langs_by_github_intl(cache, &username).await;
     render_top_langs(username, top_langs_res)
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct LanguageStat {
-    name: String,
-    color: String,
-    percent: f32,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct MinimalLanguageStat {
-    name: String,
-    count: f32,
-}
-
-#[derive(Template)]
-#[template(path = "compact/languages.html")]
-pub struct CompactLanguagesTemplate {
-    name: String,
-    stats_bar: String,
-    bar_legend: String,
 }
