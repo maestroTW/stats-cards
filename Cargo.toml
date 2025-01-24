@@ -15,3 +15,4 @@ moka = { version = "0.12.10", features = ["future"] }
 toml = "0.8.9"
 dotenv = "0.15.0"
 chrono = "0.4.39"
+textwrap = "0.16.1"
