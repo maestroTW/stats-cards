@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;0,900;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" href="/assets/favicon.svg" />
+    <link rel="stylesheet" href="/assets/styles/index.css" />
+    <title>Stats Cards Generator</title>
+  </head>
+  <body>
+    <div class="app">
+      {% include "components/header.html" %}
+      <main class="wrapper">
+        <section class="hero">
+          <h1 class="hero-title">Stats Cards Generator</h1>
+          <p class="hero-desc">
+            We make <span class="hero-highlight">blazing fast</span> stats cards
+            for everything!
+          </p>
+        </section>
+        <section class="generator">
+          <div class="generator-settings">
+            <div class="generator-category"></div>
+            <span class="generator-separator">Options</span>
+            <ul class="generator-options"></ul>
+            <button class="button generator-button" type="button">
+              Generate Stats
+            </button>
+
+            <span class="generator-separator">Preview</span>
+          </div>
+          <div class="generator-output">
+            <img
+              id="generated-image"
+              src="/v1/top-langs/github?username=ilyhalight"
+              alt="Generated stats image"
+              style="max-width: 100%"
+            />
+          </div>
+        </section>
+      </main>
+      {% include "components/footer.html" %}
+    </div>
+    <script src="/assets/scripts/index.js"></script>
+  </body>
+</html>

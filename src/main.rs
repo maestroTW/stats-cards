@@ -6,6 +6,7 @@ use axum::{routing::get, Router};
 use dotenv::dotenv;
 use moka::future::Cache;
 use std::time::Duration;
+use tower_http::services::ServeDir;
 
 const CACHE_TTL: Duration = Duration::from_secs(7200);
 
@@ -18,6 +19,8 @@ async fn main() {
         .build();
 
     let app = Router::new()
+        .nest_service("/assets", ServeDir::new("assets"))
+        .route("/", get(routes::index::get_index))
         .route(
             "/v1/top-langs/wakatime",
             get(routes::languages::get_waka_top_langs),
