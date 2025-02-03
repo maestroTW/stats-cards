@@ -2,6 +2,7 @@
   --background-color: #05010d;
   --nav-hover-color: #27272a;
   --border-color: #27272a;
+  --link-color: #ffffff99;
   --link-hover-color: #fff;
   --text-color: #cfcfcf;
   --title-color: #fff;
@@ -11,7 +12,6 @@
   --dropdown-disabled-color: #575757;
   --dropdown-selected-color: #27272a;
   --dropdown-hover-color: #262626;
-  --footer-link: #ffffff99;
 }
 
 * {
@@ -38,7 +38,7 @@ textarea {
 
 a {
   text-decoration: none;
-  color: var(--text-color);
+  color: var(--link-color);
   transition: color 0.25s ease;
 }
 
@@ -47,7 +47,7 @@ a:hover {
 }
 
 [hidden] {
-  display: none;
+  display: none !important;
 }
 
 .textfield,
@@ -104,25 +104,24 @@ a:hover {
   padding: 3rem 0;
 }
 
-.footer-link {
-  color: var(--footer-link);
-  transition: color 0.3s ease;
-}
-
 .nav-links {
   list-style: none;
 }
 
 .logo,
-.nav-links__item {
+.nav-links__item > a {
   padding: 0.5rem;
   border-radius: 50%;
   background: transparent;
   transition: background 0.35s ease;
 }
 
+.nav-links__item > a {
+  display: block;
+}
+
 .logo:hover,
-.nav-links__item:hover {
+.nav-links__item:hover > a {
   background: var(--nav-hover-color);
 }
 
@@ -368,4 +367,32 @@ a:hover {
 
 .generator-output {
   padding: 0 0.5rem;
+}
+
+.nojs-notice {
+  background: #1d1d1d;
+  border-radius: 1.5rem;
+  display: flex;
+  gap: 2rem;
+  padding: 2rem;
+}
+
+.nojs-notice__image {
+  width: 128px;
+  height: 128px;
+}
+
+.nojs-texts {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.nojs-texts__title {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.nojs-notice__desc {
+  font-size: 1.5rem;
 }

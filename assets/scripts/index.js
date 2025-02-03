@@ -388,6 +388,8 @@ function updatePreview() {
 }
 
 function init() {
+  const generatorEl = document.querySelector(".generator");
+  generatorEl.hidden = false;
   const generatorCategoryEl = document.querySelector(".generator-category");
   const generatorButtonEl = document.querySelector(".generator-button");
 
