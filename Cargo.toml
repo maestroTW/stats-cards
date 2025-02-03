@@ -1,13 +1,13 @@
 [package]
 name = "stats-cards"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 
 [dependencies]
 axum = { version = "0.8.1" }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0.136"
-tokio = { version = "1.0", features = ["full"] }
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.138"
+tokio = { version = "1.43.0", features = ["full"] }
 askama = "0.12"
 lazy_static = "1.5.0"
 reqwest = { version = "0.12.12", features = ["json"] }
@@ -16,3 +16,5 @@ toml = "0.8.9"
 dotenv = "0.15.0"
 chrono = "0.4.39"
 textwrap = "0.16.1"
+tower = { version = "0.5.2", features = ["util"] }
+tower-http = { version = "0.6.1", features = ["fs", "trace"] }
