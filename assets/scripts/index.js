@@ -64,8 +64,6 @@ function createDropdown({
   containerEl.classList.add("dropdown");
 
   const globalHandler = (e) => {
-    console.log(e.target);
-    console.log(!containerEl.contains(e.target));
     if (containerEl.contains(e.target) && containerEl !== e.target) {
       return;
     }
@@ -362,7 +360,6 @@ function initCategory() {
         inputEl.id = id;
         inputEl.checked = selected;
         inputEl.addEventListener("change", () => {
-          console.log(inputEl.checked);
           userData.set(option.query, inputEl.checked);
         });
         labelEl.append(inputEl, option.label);
@@ -383,7 +380,6 @@ function updatePreview() {
   const params = new URLSearchParams(
     selectedCategory.options.reduce((result, option) => {
       const data = userData.get(option.query);
-      console.log(data);
       result[option.query] = typeof data === "object" ? data.value : data;
       return result;
     }, {})
@@ -402,7 +398,6 @@ function init() {
     options: categories,
     onSelect: (option) => {
       selectedCategory = option;
-      console.log(selectedCategory);
       initCategory(selectedCategory);
     },
   });
