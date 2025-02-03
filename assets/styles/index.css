@@ -211,6 +211,7 @@ a:hover {
 
 .dropdown-title {
   width: max-content;
+  cursor: default;
 }
 
 .dropdown-popup {
