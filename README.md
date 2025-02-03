@@ -75,10 +75,10 @@ To run your own instance:
    cargo build --release
    ```
 
-   3.2. Run a stats-cards file from `./target/release` folder:
+   3.2. Run a stats-cards file:
 
    ```bash
-   ./stats-cards
+   ./target/release/stats-cards
    ```
 
 Written with ❤️ & 🦀
