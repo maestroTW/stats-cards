@@ -387,11 +387,86 @@ function updatePreview() {
   generatedImg.src = `/v1/${selectedCategory.path}?${params}`;
 }
 
+function toast(html, type = "success", lifetime = 5000) {
+  const existToasts = document.querySelectorAll(".toast");
+  if (existToasts) {
+    Array.from(existToasts).map((toast) => toast.prettyRemove());
+  }
+
+  const toastEl = document.createElement("div");
+  toastEl.classList.add("toast", "toast__progress-in");
+  setTimeout(() => {
+    toastEl.classList.remove("toast__progress-in");
+  }, 150);
+  if (type) {
+    toastEl.classList.add(`toast_${type}`);
+  }
+  const toastBodyEl = document.createElement("div");
+  toastBodyEl.classList.add("toast__body");
+  toastBodyEl.append(html);
+  const toastUtilityEl = document.createElement("div");
+  toastUtilityEl.classList.add("toast__utility");
+
+  const removeToastHandle = () => {
+    toastEl.classList.add("toast__progress-out");
+    setTimeout(() => {
+      toastEl.classList.remove("toast__progress-out");
+      toastEl.remove();
+    }, 150);
+  };
+  toastEl.prettyRemove = removeToastHandle;
+  toastUtilityEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="1rem" height="1rem" viewBox="0 0 11 11"><path d="M2.2 1.19l3.3 3.3L8.8 1.2a.67.67 0 0 1 .5-.2a.75.75 0 0 1 .7.7a.66.66 0 0 1-.2.48L6.49 5.5L9.8 8.82c.13.126.202.3.2.48a.75.75 0 0 1-.7.7a.67.67 0 0 1-.5-.2L5.5 6.51L2.21 9.8a.67.67 0 0 1-.5.2a.75.75 0 0 1-.71-.71a.66.66 0 0 1 .2-.48L4.51 5.5L1.19 2.18A.66.66 0 0 1 1 1.7a.75.75 0 0 1 .7-.7a.67.67 0 0 1 .5.19z" fill="currentColor"/></svg>`;
+  toastUtilityEl.addEventListener("click", removeToastHandle);
+
+  toastEl.append(toastBodyEl, toastUtilityEl);
+  if (lifetime) {
+    const toastProgressEl = document.createElement("div");
+    toastProgressEl.classList.add("toast__progress");
+    toastProgressEl.style.animationDuration = `${lifetime}ms`;
+    toastEl.appendChild(toastProgressEl);
+  }
+
+  document.body.appendChild(toastEl);
+  if (!lifetime) {
+    return toastEl;
+  }
+
+  setTimeout(removeToastHandle, lifetime);
+}
+
+// plain / markdown / (html) code
+function convertLink(url, format = "plain") {
+  switch (format) {
+    case "plain": {
+      return url;
+    }
+    case "markdown": {
+      return `![${selectedCategory.label}](${url})`;
+    }
+    case "code": {
+      return `<img src="${url}" alt="${selectedCategory.label}" />`;
+    }
+  }
+}
+
+async function copyToClipboard(format = "plain") {
+  const url = document.getElementById("generated-image")?.src;
+  if (!url) {
+    return toast("Failed to find card url", "error");
+  }
+
+  await navigator.clipboard.writeText(convertLink(url, format));
+  return toast(`Copied to Clipboard as ${format}`);
+}
+
 function init() {
   const generatorEl = document.querySelector(".generator");
   generatorEl.hidden = false;
   const generatorCategoryEl = document.querySelector(".generator-category");
   const generatorButtonEl = document.querySelector(".generator-button");
+  const copyMarkdownEl = document.getElementById("copy-markdown");
+  const copyPlainEl = document.getElementById("copy-plain");
+  const copyEmbedEl = document.getElementById("copy-embed");
 
   const categoryDropdown = createDropdown({
     title: "Select stats category",
@@ -411,6 +486,7 @@ function init() {
   generatorButtonEl.addEventListener("click", () => {
     updatePreview();
   });
+
   window.addEventListener("keypress", (e) => {
     if (e.key !== "Enter") {
       return;
@@ -418,6 +494,19 @@ function init() {
 
     updatePreview();
   });
+
+  copyMarkdownEl.addEventListener(
+    "click",
+    async () => await copyToClipboard("markdown")
+  );
+  copyPlainEl.addEventListener(
+    "click",
+    async () => await copyToClipboard("plain")
+  );
+  copyEmbedEl.addEventListener(
+    "click",
+    async () => await copyToClipboard("code")
+  );
 }
 
 init();
