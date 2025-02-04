@@ -1,3 +1,7 @@
+## 0.1.3
+
+- Added fast action buttons (copy url as `markdown`, `plain`, `(html) code`) to index page
+
 ## 0.1.2
 
 - Added index page (`/`) with cards generator
