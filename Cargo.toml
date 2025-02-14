@@ -1,6 +1,6 @@
 [package]
 name = "stats-cards"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 
 [dependencies]
@@ -12,7 +12,7 @@ askama = "0.12"
 lazy_static = "1.5.0"
 reqwest = { version = "0.12.12", features = ["json"] }
 moka = { version = "0.12.10", features = ["future"] }
-toml = "0.8.9"
+toml = "0.8.20"
 dotenv = "0.15.0"
 chrono = "0.4.39"
 textwrap = "0.16.1"
