@@ -51,6 +51,23 @@ Available themes:
 
 To run your own instance:
 
+### With Docker
+
+1. Install [Docker](https://www.docker.com/)
+2. Build the image
+
+```bash
+docker build -t "stats-cards" .
+```
+
+3. Run container
+
+```bash
+docker run -p 7674:7674 stats-cards
+```
+
+### Manually
+
 1. Install [Rust 1.75+](https://www.rust-lang.org/learn/get-started)
 
 2. (Optional) Run for developing:
