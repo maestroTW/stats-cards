@@ -1,20 +1,20 @@
 mod api;
+mod data;
 mod routes;
 mod templates;
 
 use axum::{routing::get, Router};
 use dotenv::dotenv;
 use moka::future::Cache;
-use std::time::Duration;
 use tower_http::services::ServeDir;
 
-const CACHE_TTL: Duration = Duration::from_secs(7200);
+use crate::data::config::CONFIG;
 
 #[tokio::main]
 async fn main() {
     dotenv().ok();
     let cache: Cache<String, String> = Cache::builder()
-        .time_to_live(CACHE_TTL)
+        .time_to_live(CONFIG.cache_ttl)
         .max_capacity(16384)
         .build();
 
@@ -36,7 +36,7 @@ async fn main() {
         .route("/v1/health", get(routes::health::get_health))
         .with_state(cache);
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:7674")
+    let listener = tokio::net::TcpListener::bind(format!("{0}:{1}", CONFIG.hostname, CONFIG.port))
         .await
         .unwrap();
     println!("🦀 Axum is running at {}", listener.local_addr().unwrap());

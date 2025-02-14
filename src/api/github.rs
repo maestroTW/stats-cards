@@ -1,15 +1,10 @@
 use axum::http::{HeaderMap, HeaderValue};
-use lazy_static::lazy_static;
 use reqwest::header::{ACCEPT, AUTHORIZATION, USER_AGENT};
 use reqwest::Error;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-lazy_static! {
-    // github api doesn't like default reqwest user-agent
-    static ref REQ_USER_AGENT: String =
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:135.0) Gecko/20100101 Firefox/135.0".to_string();
-}
+use crate::data::config::CONFIG;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GithubRepo {
@@ -91,24 +86,20 @@ pub struct GraphQLReq {
 }
 
 pub fn get_headers() -> HeaderMap {
-    let github_token = match std::env::var("GITHUB_TOKEN") {
-        Ok(val) => {
-            if val.len() > 0 {
-                format!("Bearer {val}")
-            } else {
-                "".to_string()
-            }
-        }
-        Err(_) => "".to_string(),
-    };
     let mut headers = HeaderMap::new();
     headers.insert(
         ACCEPT,
         HeaderValue::from_str("application/vnd.github+json").unwrap(),
     );
-    headers.insert(USER_AGENT, HeaderValue::from_str(&REQ_USER_AGENT).unwrap());
-    if !github_token.is_empty() {
-        headers.insert(AUTHORIZATION, HeaderValue::from_str(&github_token).unwrap());
+    headers.insert(
+        USER_AGENT,
+        HeaderValue::from_str(&CONFIG.user_agent).unwrap(),
+    );
+    if !&CONFIG.github_token.is_empty() {
+        headers.insert(
+            AUTHORIZATION,
+            HeaderValue::from_str(&CONFIG.github_token).unwrap(),
+        );
     }
 
     headers
