@@ -1,3 +1,9 @@
+## 0.1.4
+
+- Move some editable global consts to config file
+- Added set port (SERVICE_PORT) and hostname (SERVICE_HOST) with env
+- Added Dockerfile
+
 ## 0.1.3
 
 - Added fast action buttons (copy url as `markdown`, `plain`, `(html) code`) to index page
