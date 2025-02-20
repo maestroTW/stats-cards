@@ -1,5 +1,10 @@
-use reqwest::Error;
+use lazy_static::lazy_static;
+use reqwest::{Client, Error};
 use serde::{Deserialize, Serialize};
+
+lazy_static! {
+    static ref REQ_CLIENT: Client = Client::new();
+}
 
 macro_rules! pub_struct {
     ($name:ident {$($field:ident: $t:ty,)*}) => {
@@ -84,7 +89,9 @@ pub struct WakaTimeResponse<T> {
 
 pub async fn get_stats(username: &String) -> Result<WakaTimeResponse<WakaTimeStats>, Error> {
     let request_url = format!("https://wakatime.com/api/v1/users/{username}/stats/all_time");
-    let stats = reqwest::get(&request_url)
+    let stats = REQ_CLIENT
+        .get(&request_url)
+        .send()
         .await?
         .json::<WakaTimeResponse<WakaTimeStats>>()
         .await?;

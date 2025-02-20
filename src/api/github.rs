@@ -1,10 +1,18 @@
 use axum::http::{HeaderMap, HeaderValue};
-use reqwest::header::{ACCEPT, AUTHORIZATION, USER_AGENT};
+use lazy_static::lazy_static;
 use reqwest::Error;
+use reqwest::{
+    Client,
+    header::{ACCEPT, AUTHORIZATION, USER_AGENT},
+};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::data::config::CONFIG;
+
+lazy_static! {
+    static ref REQ_CLIENT: Client = Client::new();
+}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GithubRepo {
@@ -107,14 +115,13 @@ pub fn get_headers() -> HeaderMap {
 
 pub async fn get_stats(username: &String) -> Result<Vec<GithubRepo>, Error> {
     let request_url = format!("https://api.github.com/users/{username}/repos");
-    let client = reqwest::Client::new();
     let mut headers = get_headers();
     headers.insert(
         "X-GitHub-Api-Version",
         HeaderValue::from_str("2022-11-28").unwrap(),
     );
 
-    let data = client
+    let data = REQ_CLIENT
         .get(&request_url)
         .headers(headers)
         .send()
@@ -133,7 +140,6 @@ pub async fn get_activity(
     end_date: &String,
 ) -> Result<GithubActivityResponse, Error> {
     let request_url = format!("https://api.github.com/graphql");
-    let client = reqwest::Client::new();
     let headers = get_headers();
 
     let graphql_query = format!(
@@ -166,7 +172,7 @@ pub async fn get_activity(
         "query": graphql_query
     });
 
-    let data = client
+    let data = REQ_CLIENT
         .post(&request_url)
         .headers(headers)
         .json(&request_body)
