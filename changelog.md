@@ -1,3 +1,9 @@
+## 0.1.5
+
+- Moved create request client to lazy_static
+- Update rust edition to 2024
+- Bump depends
+
 ## 0.1.4
 
 - Move some editable global consts to config file
