@@ -88,6 +88,13 @@ pub enum GithubActivityResponse {
     Valid(GithubRes<GithubUserData>),
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum GithubStatsResponse {
+    Failed(GithubFailedRes),
+    Valid(Vec<GithubRepo>),
+}
+
 #[derive(Serialize)]
 pub struct GraphQLReq {
     query: String,
@@ -113,7 +120,7 @@ pub fn get_headers() -> HeaderMap {
     headers
 }
 
-pub async fn get_stats(username: &String) -> Result<Vec<GithubRepo>, Error> {
+pub async fn get_stats(username: &String) -> Result<GithubStatsResponse, Error> {
     let request_url = format!("https://api.github.com/users/{username}/repos");
     let mut headers = get_headers();
     headers.insert(
@@ -121,13 +128,14 @@ pub async fn get_stats(username: &String) -> Result<Vec<GithubRepo>, Error> {
         HeaderValue::from_str("2022-11-28").unwrap(),
     );
 
-    let data = REQ_CLIENT
-        .get(&request_url)
-        .headers(headers)
-        .send()
-        .await?
-        .json::<Vec<GithubRepo>>()
-        .await?;
+    let res = REQ_CLIENT.get(&request_url).headers(headers).send().await?;
+
+    // let status = res.status();
+    // if status.is_client_error() || status.is_server_error() {
+    //     return Ok("hello".to_string());
+    // }
+
+    let data = res.json::<GithubStatsResponse>().await?;
 
     Ok(data)
 }

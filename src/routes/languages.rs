@@ -1,4 +1,4 @@
-use crate::api::github::GithubRepo;
+use crate::api::github::{GithubRepo, GithubStatsResponse};
 use crate::api::{github, wakatime};
 use crate::templates;
 
@@ -106,7 +106,17 @@ async fn get_top_langs_by_github_intl(
         return Err("FailedFindUser".to_string());
     }
 
-    let languages_raw_data = stats.unwrap();
+    let languages_raw_data = match stats.unwrap() {
+        GithubStatsResponse::Failed(err) => {
+            let err_message = if err.message.contains("Bad credentials") {
+                "BadCredentials"
+            } else {
+                "FailedFindUser"
+            };
+            return Err(err_message.to_string());
+        }
+        GithubStatsResponse::Valid(res) => res,
+    };
 
     let languages_data: Vec<&GithubRepo> = languages_raw_data
         .iter()
@@ -168,17 +178,25 @@ pub fn render_top_langs(
 ) -> Response {
     if !top_langs_res.is_ok() {
         let message = top_langs_res.unwrap_err();
-        let template = if message == "FailedFindUser" {
-            templates::ErrorTemplate {
+        let template = match message.as_str() {
+            "FailedFindUser" => templates::ErrorTemplate {
                 first_line: "Failed to find a user.".to_string(),
                 second_line: "Check if it’s spelled correctly".to_string(),
-            }
-        } else {
-            templates::ErrorTemplate {
+            },
+            "FailedFindLanguages" => templates::ErrorTemplate {
                 first_line: "Failed to find a user languages.".to_string(),
                 second_line: "Maybe he's inactive".to_string(),
-            }
+            },
+            "BadCredentials" => templates::ErrorTemplate {
+                first_line: "Bad credentials.".to_string(),
+                second_line: "Problems with service API token".to_string(),
+            },
+            _ => templates::ErrorTemplate {
+                first_line: "Unknown API error.".to_string(),
+                second_line: "Let us know about it".to_string(),
+            },
         };
+
         let svg_template = templates::SVGTemplate(template);
         return templates::SVGTemplate::<templates::ErrorTemplate>::into_response(svg_template);
     }
