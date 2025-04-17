@@ -123,7 +123,6 @@ async fn get_activity_github_intl(
     let start_date = (Utc::now() - offset).to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
     let stats = github::get_activity(username, &start_date, &end_date).await;
     if !stats.is_ok() {
-        println!("{:?}", stats.unwrap_err());
         return Err("FailedFindUser".to_string());
     }
 
