@@ -1,3 +1,11 @@
+## 0.1.6
+
+- Added Github "Bad Credentials" error handling
+- Added Wakatime "Time range not matching user's public stats range." and hidden stats error handling
+- Font `Ubuntu` replaced to `system-ui`
+- Moved all hardcoded error template messages to Prepared Templates
+- Removed test print
+
 ## 0.1.5
 
 - Moved create request client to lazy_static
