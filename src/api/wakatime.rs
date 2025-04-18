@@ -8,7 +8,7 @@ lazy_static! {
 
 macro_rules! pub_struct {
     ($name:ident {$($field:ident: $t:ty,)*}) => {
-        #[derive(Deserialize, Serialize)]
+        #[derive(Debug, Deserialize, Serialize)]
         #[allow(dead_code)]
         pub struct $name {
             $(pub $field: $t),*
@@ -16,7 +16,7 @@ macro_rules! pub_struct {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[allow(dead_code)]
 pub enum WakaTimeRange {
     #[serde(rename = "last_7_days")]
@@ -81,19 +81,45 @@ pub_struct! {  WakaTimeStats {
     is_os_usage_visible: bool,
 }}
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[allow(dead_code)]
 pub struct WakaTimeResponse<T> {
     pub data: T,
 }
 
-pub async fn get_stats(username: &String) -> Result<WakaTimeResponse<WakaTimeStats>, Error> {
+#[derive(Debug, Deserialize, Serialize)]
+#[allow(dead_code)]
+pub struct WakaTimeErrorRes {
+    pub error: String,
+}
+
+pub_struct! { WakaTimeNoStats {
+    is_coding_activity_visible: bool,
+    is_language_usage_visible: bool,
+    is_editor_usage_visible: bool,
+    is_category_usage_visible: bool,
+    is_os_usage_visible: bool,
+    is_up_to_date: bool,
+    is_up_to_date_pending_future: bool,
+    percent_calculated: i32,
+    status: String,
+}}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum WakaTimeStatsRes {
+    Failed(WakaTimeErrorRes),
+    Valid(WakaTimeResponse<WakaTimeStats>),
+    NoData(WakaTimeResponse<WakaTimeNoStats>),
+}
+
+pub async fn get_stats(username: &String) -> Result<WakaTimeStatsRes, Error> {
     let request_url = format!("https://wakatime.com/api/v1/users/{username}/stats/all_time");
     let stats = REQ_CLIENT
         .get(&request_url)
         .send()
         .await?
-        .json::<WakaTimeResponse<WakaTimeStats>>()
+        .json::<WakaTimeStatsRes>()
         .await?;
 
     Ok(stats)
