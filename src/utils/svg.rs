@@ -1,3 +1,4 @@
+// lines - 1
 const MAX_LINES: usize = 2;
 
 pub fn wrap_text(text: &String) -> String {
