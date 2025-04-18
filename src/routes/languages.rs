@@ -1,5 +1,6 @@
 use crate::api::github::{GithubRepo, GithubStatsResponse};
-use crate::api::{github, wakatime};
+use crate::api::{github, wakatime, wakatime::WakaTimeStatsRes};
+use crate::prepared_templates::PreparedTemplate;
 use crate::templates;
 
 use askama::Template;
@@ -50,7 +51,7 @@ pub struct CompactLanguagesTemplate {
 async fn get_top_langs_by_waka_intl(
     cache: Cache<String, String>,
     username: &String,
-) -> Result<Vec<LanguageStat>, String> {
+) -> Result<Vec<LanguageStat>, PreparedTemplate> {
     let cache_key = format!("wakatime:langs:{username}");
     if let Some(cached) = cache.get(&cache_key).await {
         let langs = serde_json::from_str(&cached).unwrap();
@@ -59,14 +60,31 @@ async fn get_top_langs_by_waka_intl(
 
     let stats = wakatime::get_stats(username).await;
     if !stats.is_ok() {
-        return Err("FailedFindUser".to_string());
+        return Err(PreparedTemplate::Unknown);
     }
 
-    let languages = stats.unwrap().data.languages;
+    let stats_data = match stats.unwrap() {
+        WakaTimeStatsRes::Failed(err) => {
+            let err_template = match err.error.as_str() {
+                "Not found." => PreparedTemplate::FailedFindUser,
+                "Time range not matching user's public stats range." => {
+                    PreparedTemplate::FailedFindLanguages
+                }
+                _ => PreparedTemplate::Unknown,
+            };
+            return Err(err_template);
+        }
+        WakaTimeStatsRes::NoData(_) => {
+            return Err(PreparedTemplate::FailedFindLanguages);
+        }
+        WakaTimeStatsRes::Valid(res) => res,
+    };
+
+    let languages = stats_data.data.languages;
     let first_languages = match languages.first_chunk::<6>() {
         Some(langs) => langs,
         None => {
-            return Err("FailedFindLanguages".to_string());
+            return Err(PreparedTemplate::FailedFindLanguages);
         }
     };
 
@@ -94,7 +112,7 @@ async fn get_top_langs_by_waka_intl(
 async fn get_top_langs_by_github_intl(
     cache: Cache<String, String>,
     username: &String,
-) -> Result<Vec<LanguageStat>, String> {
+) -> Result<Vec<LanguageStat>, PreparedTemplate> {
     let cache_key = format!("github:langs:{username}");
     if let Some(cached) = cache.get(&cache_key).await {
         let langs = serde_json::from_str(&cached).unwrap();
@@ -103,17 +121,17 @@ async fn get_top_langs_by_github_intl(
 
     let stats = github::get_stats(username).await;
     if !stats.is_ok() {
-        return Err("FailedFindUser".to_string());
+        return Err(PreparedTemplate::Unknown);
     }
 
     let languages_raw_data = match stats.unwrap() {
         GithubStatsResponse::Failed(err) => {
-            let err_message = if err.message.contains("Bad credentials") {
-                "BadCredentials"
-            } else {
-                "FailedFindUser"
+            let err_template = match err.message.as_str() {
+                "Bad credentials" => PreparedTemplate::BadCredentials,
+                "Not Found" => PreparedTemplate::FailedFindUser,
+                _ => PreparedTemplate::Unknown,
             };
-            return Err(err_message.to_string());
+            return Err(err_template);
         }
         GithubStatsResponse::Valid(res) => res,
     };
@@ -123,7 +141,7 @@ async fn get_top_langs_by_github_intl(
         .filter(|&lang| !lang.language.is_none())
         .collect();
     if languages_data.len() == 0 {
-        return Err("FailedFindLanguages".to_string());
+        return Err(PreparedTemplate::FailedFindLanguages);
     }
 
     let mut langs_data: HashMap<String, i32> = HashMap::new();
@@ -174,31 +192,10 @@ async fn get_top_langs_by_github_intl(
 
 pub fn render_top_langs(
     username: String,
-    top_langs_res: Result<Vec<LanguageStat>, String>,
+    top_langs_res: Result<Vec<LanguageStat>, PreparedTemplate>,
 ) -> Response {
     if !top_langs_res.is_ok() {
-        let message = top_langs_res.unwrap_err();
-        let template = match message.as_str() {
-            "FailedFindUser" => templates::ErrorTemplate {
-                first_line: "Failed to find a user.".to_string(),
-                second_line: "Check if it’s spelled correctly".to_string(),
-            },
-            "FailedFindLanguages" => templates::ErrorTemplate {
-                first_line: "Failed to find a user languages.".to_string(),
-                second_line: "Maybe he's inactive".to_string(),
-            },
-            "BadCredentials" => templates::ErrorTemplate {
-                first_line: "Bad credentials.".to_string(),
-                second_line: "Problems with service API token".to_string(),
-            },
-            _ => templates::ErrorTemplate {
-                first_line: "Unknown API error.".to_string(),
-                second_line: "Let us know about it".to_string(),
-            },
-        };
-
-        let svg_template = templates::SVGTemplate(template);
-        return templates::SVGTemplate::<templates::ErrorTemplate>::into_response(svg_template);
+        return top_langs_res.unwrap_err().render();
     }
 
     let stats = top_langs_res.unwrap();

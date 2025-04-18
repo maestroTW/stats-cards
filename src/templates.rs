@@ -4,12 +4,12 @@ use axum::{
     response::{Html, IntoResponse, Response},
 };
 
-// only global templates
+// global error template
 #[derive(Template)]
 #[template(path = "error.html")]
 pub struct ErrorTemplate {
-    pub first_line: String,
-    pub second_line: String,
+    pub first_line: &'static str,
+    pub second_line: &'static str,
 }
 
 pub struct SVGTemplate<T>(pub T);

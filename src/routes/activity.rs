@@ -1,4 +1,5 @@
 use crate::api::github::{self, GithubActivityResponse};
+use crate::prepared_templates::PreparedTemplate;
 use crate::templates;
 
 use askama::Template;
@@ -103,9 +104,9 @@ async fn get_activity_github_intl(
     cache: Cache<String, String>,
     username: &String,
     period: &String,
-) -> Result<Vec<ActivityMonth>, String> {
+) -> Result<Vec<ActivityMonth>, PreparedTemplate> {
     if username.is_empty() {
-        return Err("FailedFindUser".to_string());
+        return Err(PreparedTemplate::FailedFindUser);
     }
 
     let cache_key = format!("github:activity:{username}:{period}");
@@ -123,22 +124,24 @@ async fn get_activity_github_intl(
     let start_date = (Utc::now() - offset).to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
     let stats = github::get_activity(username, &start_date, &end_date).await;
     if !stats.is_ok() {
-        return Err("FailedFindUser".to_string());
+        return Err(PreparedTemplate::Unknown);
     }
 
     let user = match stats.unwrap() {
         GithubActivityResponse::Failed(err) => {
-            let err_message = if err.message.contains("rate limit exceeded") {
-                "APIRateLimit"
+            let err_template = if err.message.contains("rate limit exceeded") {
+                PreparedTemplate::APIRateLimit
+            } else if err.message.contains("Bad credentials") {
+                PreparedTemplate::BadCredentials
             } else {
-                "FailedFindUser"
+                PreparedTemplate::Unknown
             };
-            return Err(err_message.to_string());
+            return Err(err_template);
         }
         GithubActivityResponse::Valid(res) => {
             let user_data = res.data.user;
             if user_data.is_none() {
-                return Err("FailedFindUser".to_string());
+                return Err(PreparedTemplate::FailedFindUser);
             }
 
             user_data.unwrap()
@@ -210,22 +213,10 @@ async fn get_activity_github_intl(
 pub fn render_activity(
     username: String,
     with_title: bool,
-    activity_res: Result<Vec<ActivityMonth>, String>,
+    activity_res: Result<Vec<ActivityMonth>, PreparedTemplate>,
 ) -> Response {
     if !activity_res.is_ok() {
-        let template = if activity_res.unwrap_err() == "APIRateLimit" {
-            templates::ErrorTemplate {
-                first_line: "Failed to fetch.".to_string(),
-                second_line: "Maybe our API ratelimited :(".to_string(),
-            }
-        } else {
-            templates::ErrorTemplate {
-                first_line: "Failed to find a user.".to_string(),
-                second_line: "Check if it’s spelled correctly".to_string(),
-            }
-        };
-        let svg_template = templates::SVGTemplate(template);
-        return templates::SVGTemplate::<templates::ErrorTemplate>::into_response(svg_template);
+        return activity_res.unwrap_err().render();
     }
 
     let stats = activity_res.unwrap();

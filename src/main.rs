@@ -1,9 +1,10 @@
 mod api;
 mod data;
+mod prepared_templates;
 mod routes;
 mod templates;
 
-use axum::{routing::get, Router};
+use axum::{Router, routing::get};
 use dotenv::dotenv;
 use moka::future::Cache;
 use tower_http::services::ServeDir;
