@@ -39,6 +39,8 @@ Current list of available cards:
 
 - Huggingface Pin Model Repository
 
+  Endpoint: `/v1/pin/huggingface?username=openai&repo=whisper-large-v3-turbo&show_owner=true`
+
    <img src="https://stats-cards.toil.cc/v1/pin/huggingface?username=openai&repo=whisper-large-v3-turbo" alt="demo" />
 
   Support show owner name with param `show_owner`:
