@@ -1,4 +1,6 @@
-use crate::api::github::{self, GithubActivityResponse};
+use crate::api::github::{
+    self, ActivityResponse as GithubActivityResponse, ContributionMonth as GithubContributionMonth,
+};
 use crate::prepared_templates::PreparedTemplate;
 use crate::templates;
 
@@ -156,7 +158,7 @@ async fn get_activity_github_intl(
         let mut week_data: Vec<ActivityDay> = Vec::new();
         for mut day in week.contribution_days {
             let _ = day.date.split_off(7);
-            let finded_month_raw: Option<&github::GithubContributionMonth> = calendar_data
+            let finded_month_raw: Option<&GithubContributionMonth> = calendar_data
                 .months
                 .iter()
                 .find(|month| month.first_day.contains(&day.date));

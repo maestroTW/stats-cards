@@ -2,23 +2,15 @@ use lazy_static::lazy_static;
 use reqwest::{Client, Error};
 use serde::{Deserialize, Serialize};
 
+use crate::pub_struct;
+
 lazy_static! {
     static ref REQ_CLIENT: Client = Client::new();
 }
 
-macro_rules! pub_struct {
-    ($name:ident {$($field:ident: $t:ty,)*}) => {
-        #[derive(Debug, Deserialize, Serialize)]
-        #[allow(dead_code)]
-        pub struct $name {
-            $(pub $field: $t),*
-        }
-    }
-}
-
 #[derive(Debug, Deserialize, Serialize)]
 #[allow(dead_code)]
-pub enum WakaTimeRange {
+pub enum StatsRange {
     #[serde(rename = "last_7_days")]
     Last7Days,
     #[serde(rename = "last_30_days")]
@@ -32,7 +24,7 @@ pub enum WakaTimeRange {
 }
 
 // same for editors, categories, languages
-pub_struct! { WakaTimeEntry {
+pub_struct! { Entry {
     name: String,
     total_seconds: f64,
     percent: f32,
@@ -43,10 +35,10 @@ pub_struct! { WakaTimeEntry {
     minutes: i8,
 }}
 
-pub_struct! {  WakaTimeStats {
+pub_struct! {  Stats {
     id: String,
     user_id: String,
-    range: WakaTimeRange,
+    range: StatsRange,
     timeout: i32,
     writes_only: bool,
     holidays: i32,
@@ -59,16 +51,16 @@ pub_struct! {  WakaTimeStats {
     days_minus_holidays: i32,
     daily_average_including_other_language: f64,
     human_readable_daily_average_including_other_language: String,
-    editors: Vec<WakaTimeEntry>,
+    editors: Vec<Entry>,
     is_up_to_date_pending_future: bool,
     is_already_updating: bool,
-    categories: Vec<WakaTimeEntry>,
-    languages: Vec<WakaTimeEntry>,
+    categories: Vec<Entry>,
+    languages: Vec<Entry>,
     is_stuck: bool,
     daily_average: f64,
     human_readable_total_including_other_language: String,
     days_including_holidays: i32,
-    operating_systems: Vec<WakaTimeEntry>,
+    operating_systems: Vec<Entry>,
     human_readable_total: String,
     is_cached: bool,
     username: String,
@@ -83,17 +75,17 @@ pub_struct! {  WakaTimeStats {
 
 #[derive(Debug, Deserialize, Serialize)]
 #[allow(dead_code)]
-pub struct WakaTimeResponse<T> {
+pub struct SuccessResponse<T> {
     pub data: T,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 #[allow(dead_code)]
-pub struct WakaTimeErrorRes {
+pub struct ErrorResponse {
     pub error: String,
 }
 
-pub_struct! { WakaTimeNoStats {
+pub_struct! { PrivateStats {
     is_coding_activity_visible: bool,
     is_language_usage_visible: bool,
     is_editor_usage_visible: bool,
@@ -107,19 +99,19 @@ pub_struct! { WakaTimeNoStats {
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(untagged)]
-pub enum WakaTimeStatsRes {
-    Failed(WakaTimeErrorRes),
-    Valid(WakaTimeResponse<WakaTimeStats>),
-    NoData(WakaTimeResponse<WakaTimeNoStats>),
+pub enum StatsResponse {
+    Failed(ErrorResponse),
+    Valid(SuccessResponse<Stats>),
+    NoData(SuccessResponse<PrivateStats>),
 }
 
-pub async fn get_stats(username: &String) -> Result<WakaTimeStatsRes, Error> {
+pub async fn get_stats(username: &String) -> Result<StatsResponse, Error> {
     let request_url = format!("https://wakatime.com/api/v1/users/{username}/stats/all_time");
     let stats = REQ_CLIENT
         .get(&request_url)
         .send()
         .await?
-        .json::<WakaTimeStatsRes>()
+        .json::<StatsResponse>()
         .await?;
 
     Ok(stats)

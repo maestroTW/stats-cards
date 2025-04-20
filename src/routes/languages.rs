@@ -1,5 +1,5 @@
-use crate::api::github::{GithubRepo, GithubStatsResponse};
-use crate::api::{github, wakatime, wakatime::WakaTimeStatsRes};
+use crate::api::github::{GithubStatsResponse, Repo as GithubRepo};
+use crate::api::{github, wakatime, wakatime::StatsResponse as WakaTimeStatsResponse};
 use crate::prepared_templates::PreparedTemplate;
 use crate::templates;
 
@@ -64,7 +64,7 @@ async fn get_top_langs_by_waka_intl(
     }
 
     let stats_data = match stats.unwrap() {
-        WakaTimeStatsRes::Failed(err) => {
+        WakaTimeStatsResponse::Failed(err) => {
             let err_template = match err.error.as_str() {
                 "Not found." => PreparedTemplate::FailedFindUser,
                 "Time range not matching user's public stats range." => {
@@ -74,10 +74,10 @@ async fn get_top_langs_by_waka_intl(
             };
             return Err(err_template);
         }
-        WakaTimeStatsRes::NoData(_) => {
+        WakaTimeStatsResponse::NoData(_) => {
             return Err(PreparedTemplate::FailedFindLanguages);
         }
-        WakaTimeStatsRes::Valid(res) => res,
+        WakaTimeStatsResponse::Valid(res) => res,
     };
 
     let languages = stats_data.data.languages;

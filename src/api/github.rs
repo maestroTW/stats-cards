@@ -15,14 +15,14 @@ lazy_static! {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct GithubRepo {
+pub struct Repo {
     pub private: bool,
     pub language: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GithubContributionDay {
+pub struct ContributionDay {
     pub weekday: i8,
     pub date: String,
     pub contribution_count: i32,
@@ -31,13 +31,13 @@ pub struct GithubContributionDay {
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GithubContributionWeek {
-    pub contribution_days: Vec<GithubContributionDay>,
+pub struct ContributionWeek {
+    pub contribution_days: Vec<ContributionDay>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GithubContributionMonth {
+pub struct ContributionMonth {
     pub name: String,
     pub year: i16,
     pub first_day: String,
@@ -48,51 +48,51 @@ pub struct GithubContributionMonth {
 #[serde(rename_all = "camelCase")]
 pub struct GithubCalendar {
     pub total_contributions: i32,
-    pub weeks: Vec<GithubContributionWeek>,
-    pub months: Vec<GithubContributionMonth>,
+    pub weeks: Vec<ContributionWeek>,
+    pub months: Vec<ContributionMonth>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GithubContributions {
+pub struct Contributions {
     pub contribution_calendar: GithubCalendar,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GithubUser {
+pub struct User {
     pub created_at: String,
-    pub contributions_collection: GithubContributions,
+    pub contributions_collection: Contributions,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct GithubUserData {
+pub struct UserData {
     // user or null if not found
-    pub user: Option<GithubUser>,
+    pub user: Option<User>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct GithubRes<T> {
+pub struct SuccessResponse<T> {
     pub data: T,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct GithubFailedRes {
+pub struct ErrorResponse {
     pub message: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(untagged)]
-pub enum GithubActivityResponse {
-    Failed(GithubFailedRes),
-    Valid(GithubRes<GithubUserData>),
+pub enum ActivityResponse {
+    Failed(ErrorResponse),
+    Valid(SuccessResponse<UserData>),
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum GithubStatsResponse {
-    Failed(GithubFailedRes),
-    Valid(Vec<GithubRepo>),
+    Failed(ErrorResponse),
+    Valid(Vec<Repo>),
 }
 
 #[derive(Serialize)]
@@ -129,12 +129,6 @@ pub async fn get_stats(username: &String) -> Result<GithubStatsResponse, Error> 
     );
 
     let res = REQ_CLIENT.get(&request_url).headers(headers).send().await?;
-
-    // let status = res.status();
-    // if status.is_client_error() || status.is_server_error() {
-    //     return Ok("hello".to_string());
-    // }
-
     let data = res.json::<GithubStatsResponse>().await?;
 
     Ok(data)
@@ -146,7 +140,7 @@ pub async fn get_activity(
     username: &String,
     start_date: &String,
     end_date: &String,
-) -> Result<GithubActivityResponse, Error> {
+) -> Result<ActivityResponse, Error> {
     let request_url = format!("https://api.github.com/graphql");
     let headers = get_headers();
 
@@ -186,7 +180,7 @@ pub async fn get_activity(
         .json(&request_body)
         .send()
         .await?
-        .json::<GithubActivityResponse>()
+        .json::<ActivityResponse>()
         .await?;
 
     Ok(data)
