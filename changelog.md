@@ -1,3 +1,7 @@
+## 0.1.8 [WIP]
+
+- Added extra check for Huggingface unauthorized api response
+
 ## 0.1.7
 
 - Added support Pin model from Huggingface

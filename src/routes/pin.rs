@@ -90,6 +90,7 @@ pub async fn get_huggingface_pin_model_impl(
         HFModelResponse::Failed(err) => {
             let err_template = match err.error.as_str() {
                 "Invalid credentials in Authorization header" => PreparedTemplate::BadCredentials,
+                "Invalid username or password." => PreparedTemplate::BadCredentials,
                 "Repository not found" => PreparedTemplate::FailedFindRepo,
                 _ => PreparedTemplate::Unknown,
             };
@@ -160,7 +161,6 @@ pub fn render_huggingface_pin(
         name: username,
         desc: repo,
         repo_text,
-        // downloads: Some("72.4k"),
         downloads: Some(&downloads),
         likes: fmt_num(data.likes as i32),
         icon,
