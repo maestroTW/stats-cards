@@ -3,6 +3,7 @@ mod data;
 mod prepared_templates;
 mod routes;
 mod templates;
+mod utils;
 
 use axum::{Router, routing::get};
 use dotenv::dotenv;
@@ -33,6 +34,10 @@ async fn main() {
         .route(
             "/v1/activity/github",
             get(routes::activity::get_github_activity_graph),
+        )
+        .route(
+            "/v1/pin/huggingface",
+            get(routes::pin::get_huggingface_repo),
         )
         .route("/v1/health", get(routes::health::get_health))
         .with_state(cache);

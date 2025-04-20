@@ -19,6 +19,7 @@ pub struct Config {
     pub cache_ttl: Duration,
     pub user_agent: String,
     pub github_token: String,
+    pub huggingface_token: String,
 }
 
 lazy_static! {
@@ -42,6 +43,11 @@ lazy_static! {
             .ok()
             .filter(|val| !val.is_empty())
             .map(|val| format!("Bearer {val}"))
-            .unwrap_or_default()
+            .unwrap_or_default(),
+        huggingface_token: std::env::var("HUGGINGFACE_TOKEN")
+            .ok()
+            .filter(|val| !val.is_empty())
+            .map(|val| format!("Bearer {val}"))
+            .unwrap_or_default(),
     };
 }

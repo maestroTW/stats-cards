@@ -43,6 +43,12 @@ const period = [
   },
 ];
 
+const hfPinTypes = [
+  { value: "model", label: "Model" },
+  { value: "dataset", label: "Dataset", disabled: true },
+  { value: "space", label: "Space", disabled: true },
+];
+
 function createPopup(el) {
   const popupEl = document.createElement("div");
   popupEl.classList.add("popup");
@@ -203,18 +209,21 @@ const cards = {
     path: "top-langs/github",
     options: [
       {
+        id: "github-username",
         label: "Select username",
         query: "username",
         type: "input",
         value: DEFAULT_USERNAME,
       },
       {
+        id: "theme",
         label: "Select theme",
         query: "theme",
         type: "dropdown",
         value: themes,
       },
       {
+        id: "layout",
         label: "Select layout",
         query: "layout",
         type: "dropdown",
@@ -227,18 +236,21 @@ const cards = {
     path: "top-langs/wakatime",
     options: [
       {
+        id: "wakatime-username",
         label: "Select username",
         query: "username",
         type: "input",
         value: "Toil",
       },
       {
+        id: "theme",
         label: "Select theme",
         query: "theme",
         type: "dropdown",
         value: themes,
       },
       {
+        id: "layout",
         label: "Select layout",
         query: "layout",
         type: "dropdown",
@@ -251,28 +263,66 @@ const cards = {
     path: "activity/github",
     options: [
       {
+        id: "github-username",
         label: "Select username",
         query: "username",
         type: "input",
         value: DEFAULT_USERNAME,
       },
       {
+        id: "theme",
         label: "Select theme",
         query: "theme",
         type: "dropdown",
         value: themes,
       },
       {
+        id: "activity-period",
         label: "Select period",
         query: "period",
         type: "dropdown",
         value: period,
       },
       {
+        id: "show-title",
         label: "Show title",
         query: "with_title",
         type: "checkbox",
         value: true,
+      },
+    ],
+  },
+  "pin-huggingface": {
+    label: "Pin (Huggingface)",
+    path: "pin/huggingface",
+    options: [
+      {
+        id: "huggingface-username",
+        label: "Select username",
+        query: "username",
+        type: "input",
+        value: "openai",
+      },
+      {
+        id: "huggingface-repo",
+        label: "Select repo",
+        query: "repo",
+        type: "input",
+        value: "whisper-large-v3-turbo",
+      },
+      {
+        id: "huggingface-pin-type",
+        label: "Select type",
+        query: "type",
+        type: "dropdown",
+        value: hfPinTypes,
+      },
+      {
+        id: "show-owner",
+        label: "Show owner",
+        query: "show_owner",
+        type: "checkbox",
+        value: false,
       },
     ],
   },
@@ -300,16 +350,16 @@ function initCategory() {
   const optionEls = selectedCategory.options.map((option) => {
     const optionEl = document.createElement("li");
     optionEl.classList.add("generator_options__item");
-    if (!userData.has(option.query)) {
+    if (!userData.has(option.id)) {
       userData.set(
-        option.query,
+        option.id,
         Array.isArray(option.value)
           ? option.value.find((val) => !val.disabled)
           : option.value
       );
     }
 
-    const selected = userData.get(option.query);
+    const selected = userData.get(option.id);
     switch (option.type) {
       case "dropdown": {
         const dropdown = createDropdown({
@@ -318,7 +368,7 @@ function initCategory() {
           search: !!option.search,
           options: option.value,
           onSelect: (opt) => {
-            userData.set(option.query, opt);
+            userData.set(option.id, opt);
           },
         });
 
@@ -327,7 +377,7 @@ function initCategory() {
       }
       case "input": {
         const labelEl = document.createElement("label");
-        const id = `generator-${option.query}`;
+        const id = `generator-${option.id}`;
         labelEl.setAttribute("for", id);
         labelEl.classList.add("textfield-wrapper");
 
@@ -341,7 +391,7 @@ function initCategory() {
         inputEl.addEventListener("input", () => {
           clearTimeout(timer);
           timer = setTimeout(() => {
-            userData.set(option.query, inputEl.value);
+            userData.set(option.id, inputEl.value);
           }, 100);
         });
 
@@ -352,7 +402,7 @@ function initCategory() {
       case "checkbox": {
         const labelEl = document.createElement("label");
         labelEl.classList.add("checkbox-wrapper");
-        const id = `generator-${option.query}`;
+        const id = `generator-${option.id}`;
         labelEl.setAttribute("for", id);
 
         const inputEl = document.createElement("input");
@@ -360,7 +410,7 @@ function initCategory() {
         inputEl.id = id;
         inputEl.checked = selected;
         inputEl.addEventListener("change", () => {
-          userData.set(option.query, inputEl.checked);
+          userData.set(option.id, inputEl.checked);
         });
         labelEl.append(inputEl, option.label);
         optionEl.appendChild(labelEl);
@@ -379,7 +429,7 @@ function updatePreview() {
   const generatedImg = document.getElementById("generated-image");
   const params = new URLSearchParams(
     selectedCategory.options.reduce((result, option) => {
-      const data = userData.get(option.query);
+      const data = userData.get(option.id);
       result[option.query] = typeof data === "object" ? data.value : data;
       return result;
     }, {})

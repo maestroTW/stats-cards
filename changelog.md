@@ -1,3 +1,8 @@
+## 0.1.7
+
+- Added support Pin model from Huggingface
+- Stats Cards Generator frontend now cache values only for similar cards e.g. github username uses only for `Languages (Github)` and `Activity (Github)` and etc
+
 ## 0.1.6
 
 - Added Github "Bad Credentials" error handling
@@ -15,7 +20,7 @@
 ## 0.1.4
 
 - Move some editable global consts to config file
-- Added set port (SERVICE_PORT) and hostname (SERVICE_HOST) with env
+- Added set port (`SERVICE_PORT`) and hostname (`SERVICE_HOST`) with env
 - Added Dockerfile
 
 ## 0.1.3

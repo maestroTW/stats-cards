@@ -8,13 +8,19 @@ Current list of available cards:
 
 - Wakatime languages (compact with progress)
 
+  Endpoint: `/v1/top-langs/wakatime?username=Toil`
+
    <img src="https://stats-cards.toil.cc/v1/top-langs/wakatime?username=Toil" alt="demo" />
 
 - Github languages (compact with progress)
 
+  Endpoint: `/v1/top-langs/github?username=ilyhalight`
+
    <img src="https://stats-cards.toil.cc/v1/top-langs/github?username=ilyhalight" alt="demo" />
 
 - Github Activity Graph
+
+  Endpoint: `/v1/activity/github?username=ilyhalight&period=3_months&with_title=true`
 
    <img src="https://stats-cards.toil.cc/v1/activity/github?username=ilyhalight&period=3_months&with_title=true" alt="demo" />
 
@@ -29,7 +35,20 @@ Current list of available cards:
   - `6_months`
   - `year`
 
-  \* Required GITHUB_TOKEN in `.env`
+  \* Required `GITHUB_TOKEN` in `.env`
+
+- Huggingface Pin Model Repository
+
+   <img src="https://stats-cards.toil.cc/v1/pin/huggingface?username=openai&repo=whisper-large-v3-turbo" alt="demo" />
+
+  Support show owner name with param `show_owner`:
+
+  - `true`
+  - `false` (default)
+
+   <img src="https://stats-cards.toil.cc/v1/pin/huggingface?username=openai&repo=whisper-large-v3-turbo" alt="demo with show_owner" />
+
+  \* Required `HUGGINGFACE_TOKEN` in `.env`
 
 List of planned cards:
 
