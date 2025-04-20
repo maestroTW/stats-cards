@@ -46,7 +46,7 @@ Current list of available cards:
   - `true`
   - `false` (default)
 
-   <img src="https://stats-cards.toil.cc/v1/pin/huggingface?username=openai&repo=whisper-large-v3-turbo" alt="demo with show_owner" />
+   <img src="https://stats-cards.toil.cc/v1/pin/huggingface?username=openai&repo=whisper-large-v3-turbo&show_owner=true" alt="demo with show_owner" />
 
   \* Required `HUGGINGFACE_TOKEN` in `.env`
 
