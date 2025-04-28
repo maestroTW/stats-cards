@@ -35,10 +35,7 @@ async fn main() {
             "/v1/activity/github",
             get(routes::activity::get_github_activity_graph),
         )
-        .route(
-            "/v1/pin/huggingface",
-            get(routes::pin::get_huggingface_repo),
-        )
+        .route("/v1/pin/huggingface", get(routes::pin::get_huggingface_pin))
         .route("/v1/health", get(routes::health::get_health))
         .with_state(cache);
 

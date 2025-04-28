@@ -1,11 +1,14 @@
 use std::vec;
 
-use crate::api::huggingface;
+use crate::api::huggingface::{self};
 use crate::prepared_templates::PreparedTemplate;
 use crate::templates;
-use crate::utils::utils::fmt_num;
 use crate::{
-    api::huggingface::{Model as HFModel, ModelResponse as HFModelResponse},
+    api::huggingface::{
+        DatasetResponse as HFDatasetResponse, ErrorResponse as HFErrorResponse,
+        ModelResponse as HFModelResponse, RepoData as HFRepoData, RepoResponse as HFRepoResponse,
+        SpaceResponse as HFSpaceResponse,
+    },
     utils::svg::calc_width,
 };
 
@@ -23,6 +26,8 @@ const MAX_PIN_WIDTH: usize = 400;
 pub struct Params {
     username: String,
     repo: String,
+    #[serde(rename = "type")]
+    typename: HFPinIcon,
     show_owner: Option<bool>,
 }
 
@@ -60,84 +65,146 @@ pub struct HFPinTemplate<'a> {
     name: String,
     desc: String,
     repo_text: String,
-    likes: String,
+    likes: &'a String,
     downloads: Option<&'a String>,
     icon: HFPinIcon,
     tags: Vec<HFTag>,
 }
 
-pub async fn get_huggingface_pin_model_impl(
+fn hf_handle_error_template(err: HFErrorResponse) -> PreparedTemplate {
+    match err.error.as_str() {
+        "Invalid credentials in Authorization header" => PreparedTemplate::BadCredentials,
+        "Invalid username or password." => PreparedTemplate::BadCredentials,
+        "Repository not found" => PreparedTemplate::FailedFindRepo,
+        _ => PreparedTemplate::Unknown,
+    }
+}
+
+pub async fn huggingface_get_data(
+    username: &String,
+    repo: &String,
+    typename: &HFPinIcon,
+) -> Result<HFRepoData, PreparedTemplate> {
+    let data = match typename {
+        HFPinIcon::Model => huggingface::get_model(username, repo)
+            .await
+            .map(HFRepoResponse::Model),
+        HFPinIcon::Dataset => huggingface::get_dataset(username, repo)
+            .await
+            .map(HFRepoResponse::Dataset),
+        HFPinIcon::Space => huggingface::get_space(username, repo)
+            .await
+            .map(HFRepoResponse::Space),
+    };
+    if !data.is_ok() {
+        return Err(PreparedTemplate::Unknown);
+    }
+
+    match data.unwrap() {
+        HFRepoResponse::Model(HFModelResponse::Valid(res)) => Ok(HFRepoData::Model(res)),
+        HFRepoResponse::Dataset(HFDatasetResponse::Valid(res)) => Ok(HFRepoData::Dataset(res)),
+        HFRepoResponse::Space(HFSpaceResponse::Valid(res)) => Ok(HFRepoData::Space(res)),
+        HFRepoResponse::Model(HFModelResponse::Failed(err))
+        | HFRepoResponse::Space(HFSpaceResponse::Failed(err))
+        | HFRepoResponse::Dataset(HFDatasetResponse::Failed(err)) => {
+            Err(hf_handle_error_template(err))
+        }
+    }
+}
+
+pub async fn get_huggingface_pin_impl(
     cache: Cache<String, String>,
     username: &String,
     repo: &String,
-) -> Result<HFModel, PreparedTemplate> {
+    typename: &HFPinIcon,
+) -> Result<HFRepoData, PreparedTemplate> {
     if username.is_empty() || repo.is_empty() {
         return Err(PreparedTemplate::FailedFindRepo);
     }
 
-    let cache_key = format!("huggingface:model:{username}:{repo}");
+    let cache_key = format!("huggingface:{:?}:{username}:{repo}", typename);
     if let Some(cached) = cache.get(&cache_key).await {
         let langs = serde_json::from_str(&cached).unwrap();
         return Ok(langs);
     }
 
-    let model_res = huggingface::get_model(username, repo).await;
-    if !model_res.is_ok() {
-        return Err(PreparedTemplate::Unknown);
-    }
-
-    let model = match model_res.unwrap() {
-        HFModelResponse::Failed(err) => {
-            let err_template = match err.error.as_str() {
-                "Invalid credentials in Authorization header" => PreparedTemplate::BadCredentials,
-                "Invalid username or password." => PreparedTemplate::BadCredentials,
-                "Repository not found" => PreparedTemplate::FailedFindRepo,
-                _ => PreparedTemplate::Unknown,
-            };
-            return Err(err_template);
-        }
-        HFModelResponse::Valid(res) => res,
+    let data = huggingface_get_data(username, repo, typename).await;
+    let result = match data {
+        Ok(data) => data,
+        Err(err) => return Err(err),
     };
 
-    let cache_body = serde_json::to_string(&model).unwrap();
+    let cache_body = serde_json::to_string(&result).unwrap();
     cache.insert(cache_key, cache_body).await;
 
-    Ok(model)
+    Ok(result)
 }
 
 pub fn render_huggingface_pin(
     username: String,
     repo: String,
     show_owner: bool,
-    pin_data: Result<HFModel, PreparedTemplate>,
+    pin_data: Result<HFRepoData, PreparedTemplate>,
 ) -> Response {
-    if !pin_data.is_ok() {
-        return pin_data.unwrap_err().render();
-    }
+    let raw_data = match pin_data {
+        Ok(data) => data,
+        Err(err) => return err.render(),
+    };
 
-    let data = pin_data.unwrap();
     let mut raw_tags: Vec<String> = vec![];
-    if let Some(model_type) = data
-        .config
-        .as_ref()
-        .and_then(|config| config.model_type.clone())
-    {
-        raw_tags.push(model_type);
+    let downloads_raw: &Option<String> = &raw_data.get_downloads_count();
+    let downloads: Option<&String> = downloads_raw.as_ref();
+    if let HFRepoData::Model(model) = &raw_data {
+        if let Some(model_type) = model
+            .config
+            .as_ref()
+            .and_then(|config| config.model_type.clone())
+        {
+            raw_tags.push(model_type);
+        }
+
+        if let Some(pipeline_tag) = &model.pipeline_tag {
+            raw_tags.push(pipeline_tag.to_string());
+        }
     }
 
-    if let Some(pipeline_tag) = data.pipeline_tag {
-        raw_tags.push(pipeline_tag.to_string());
+    if let HFRepoData::Dataset(dataset) = &raw_data {
+        if let Some(task_category) = &dataset
+            .base
+            .card_data
+            .task_categories
+            .as_ref()
+            .and_then(|categories| categories.first())
+        {
+            raw_tags.push((*task_category).clone())
+        }
     }
 
-    if let Some(license) = data.card_data.license {
+    if let HFRepoData::Space(space) = &raw_data {
+        let running_on = space.runtime.hardware.current.to_string();
+        raw_tags.push(format!("Running on {running_on}"));
+    }
+
+    let icon = match &raw_data {
+        HFRepoData::Model(_) => HFPinIcon::Model,
+        HFRepoData::Dataset(_) => HFPinIcon::Dataset,
+        HFRepoData::Space(_) => HFPinIcon::Space,
+    };
+
+    if let Some(license) = &raw_data.get_license() {
         if license != "other" {
             raw_tags.push(license.to_uppercase());
         }
     }
 
-    let icon = HFPinIcon::Model;
-    let mut translate_x: usize = 0;
+    let likes = &raw_data.get_likes();
+    if raw_tags.len() == 0 {
+        if let Some(tag) = &raw_data.get_repo_tags().first() {
+            raw_tags.push((*tag).clone());
+        }
+    }
 
+    let mut translate_x: usize = 0;
     let tags: Vec<HFTag> = raw_tags
         .iter()
         .map(|tag| {
@@ -154,15 +221,18 @@ pub fn render_huggingface_pin(
         .filter(|tag| tag.visible)
         .collect();
 
-    let downloads = fmt_num(data.downloads as i32);
-    let repo_text = if show_owner { data.id } else { repo.clone() };
+    let repo_text = if show_owner {
+        raw_data.get_id()
+    } else {
+        repo.clone()
+    };
 
     let template = HFPinTemplate {
         name: username,
         desc: repo,
         repo_text,
-        downloads: Some(&downloads),
-        likes: fmt_num(data.likes as i32),
+        downloads,
+        likes,
         icon,
         tags,
     };
@@ -171,17 +241,18 @@ pub fn render_huggingface_pin(
     templates::SVGTemplate::<HFPinTemplate>::into_response(svg_template)
 }
 
-pub async fn get_huggingface_repo(
+pub async fn get_huggingface_pin(
     State(cache): State<Cache<String, String>>,
     Query(params): Query<Params>,
 ) -> Response {
     let username = params.username;
     let repo = params.repo;
+    let typename = params.typename;
     let show_owner = if let Some(show_owner) = params.show_owner {
         show_owner
     } else {
         false
     };
-    let model = get_huggingface_pin_model_impl(cache, &username, &repo).await;
-    render_huggingface_pin(username, repo, show_owner, model)
+    let repo_data = get_huggingface_pin_impl(cache, &username, &repo, &typename).await;
+    render_huggingface_pin(username, repo, show_owner, repo_data)
 }

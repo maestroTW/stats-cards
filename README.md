@@ -37,18 +37,24 @@ Current list of available cards:
 
   \* Required `GITHUB_TOKEN` in `.env`
 
-- Huggingface Pin Model Repository
+- Huggingface Pin Repository
 
-  Endpoint: `/v1/pin/huggingface?username=openai&repo=whisper-large-v3-turbo&show_owner=true`
+  Endpoint: `/v1/pin/huggingface?username=openai&repo=whisper-large-v3-turbo&show_owner=true&type=model`
 
-   <img src="https://stats-cards.toil.cc/v1/pin/huggingface?username=openai&repo=whisper-large-v3-turbo" alt="demo" />
+  Support select repo type with param `type`:
+
+  - `model`
+  - `dataset`
+  - `space`
+
+   <img src="https://stats-cards.toil.cc/v1/pin/huggingface?username=openai&repo=whisper-large-v3-turbo&type=model" alt="demo" />
 
   Support show owner name with param `show_owner`:
 
   - `true`
   - `false` (default)
 
-   <img src="https://stats-cards.toil.cc/v1/pin/huggingface?username=openai&repo=whisper-large-v3-turbo&show_owner=true" alt="demo with show_owner" />
+   <img src="https://stats-cards.toil.cc/v1/pin/huggingface?username=openai&repo=whisper-large-v3-turbo&show_owner=true&type=model" alt="demo with show_owner" />
 
   \* Required `HUGGINGFACE_TOKEN` in `.env`
 

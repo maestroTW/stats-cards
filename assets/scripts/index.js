@@ -45,8 +45,8 @@ const period = [
 
 const hfPinTypes = [
   { value: "model", label: "Model" },
-  { value: "dataset", label: "Dataset", disabled: true },
-  { value: "space", label: "Space", disabled: true },
+  { value: "dataset", label: "Dataset" },
+  { value: "space", label: "Space" },
 ];
 
 function createPopup(el) {

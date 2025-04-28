@@ -3,7 +3,7 @@ use lazy_static::lazy_static;
 use reqwest::{Client, Error, header::AUTHORIZATION};
 use serde::{Deserialize, Serialize};
 
-use crate::{data::config::CONFIG, pub_struct};
+use crate::{data::config::CONFIG, pub_struct, utils::utils::fmt_num};
 
 lazy_static! {
     static ref REQ_CLIENT: Client = Client::new();
@@ -192,6 +192,7 @@ impl PipelineTag {
 pub_struct! { CardData {
     license: Option<String>,
     tags: Option<Vec<String>>,
+    task_categories: Option<Vec<String>>,
 }}
 
 pub_struct! { ModelConfig {
@@ -199,29 +200,163 @@ pub_struct! { ModelConfig {
 }}
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Model {
-    // without same useless fields
+pub struct BaseData {
     pub _id: String,
     pub id: String,
     pub private: bool,
-    pub pipeline_tag: Option<PipelineTag>,
-    // e.g. transformers
-    pub library_name: Option<String>,
     pub tags: Vec<String>,
-    pub downloads: u32,
     pub likes: u32,
-    #[serde(rename = "modelId")]
-    pub model_id: String,
     pub author: String,
     #[serde(rename = "lastModified")]
     pub last_modified: String,
-    pub gated: bool,
     pub disabled: bool,
-    pub config: Option<ModelConfig>,
     #[serde(rename = "cardData")]
     pub card_data: CardData,
     #[serde(rename = "createdAt")]
     pub created_at: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Model {
+    #[serde(flatten)]
+    pub base: BaseData,
+    // without same useless fields
+    pub pipeline_tag: Option<PipelineTag>,
+    // e.g. transformers
+    pub library_name: Option<String>,
+    pub downloads: u32,
+    #[serde(rename = "modelId")]
+    pub model_id: String,
+    pub config: Option<ModelConfig>,
+}
+
+// kube-xxxx/index.js
+#[derive(Debug, Deserialize, Serialize)]
+pub enum SpaceRuntimeStage {
+    #[serde(rename = "NO_APP_FILE")]
+    NoAppFile,
+    #[serde(rename = "CONFIG_ERROR")]
+    ConfigError,
+    #[serde(rename = "BUILDING")]
+    Building,
+    #[serde(rename = "BUILD_ERROR")]
+    BuildError,
+    #[serde(rename = "APP_STARTING")]
+    AppStarting,
+    #[serde(rename = "RUNNING")]
+    Running,
+    #[serde(rename = "RUNNING_BUILDING")]
+    RunningBuilding,
+    #[serde(rename = "RUNNING_APP_STARTING")]
+    RunningAppStarting,
+    #[serde(rename = "RUNTIME_ERROR")]
+    RuntimeError,
+    #[serde(rename = "DELETING")]
+    Deleting,
+    #[serde(rename = "STOPPED")]
+    Stopped,
+    #[serde(rename = "PAUSED")]
+    Paused,
+    #[serde(rename = "SLEEPING")]
+    Sleeping,
+}
+
+// kube-xxxx/SpaceHardwareBadge.js
+#[derive(Debug, Deserialize, Serialize)]
+pub enum SpaceRuntimeHardware {
+    #[serde(rename = "cpu-basic")]
+    CpuBasic,
+    #[serde(rename = "cpu-upgrade")]
+    CpuUpgrade,
+    #[serde(rename = "cpu-performance")]
+    CpuPerfomance,
+    #[serde(rename = "cpu-xl")]
+    CpuXL,
+    #[serde(rename = "a100-large")]
+    A100Large,
+    #[serde(rename = "zero-a10g")]
+    ZeroA10G,
+    #[serde(rename = "a10g-large")]
+    A10GLarge,
+    #[serde(rename = "a10g-largex2")]
+    A10GLargeX2,
+    #[serde(rename = "a10g-largex4")]
+    A10GLargeX4,
+    #[serde(rename = "a10g-small")]
+    A10GSmall,
+    #[serde(rename = "h100")]
+    H100,
+    #[serde(rename = "h100x8")]
+    H100X8,
+    #[serde(rename = "t4-medium")]
+    T4Medium,
+    #[serde(rename = "t4-small")]
+    T4Small,
+    #[serde(rename = "l4x1")]
+    L4X1,
+    #[serde(rename = "l4x4")]
+    L4X4,
+    #[serde(rename = "l40sx1")]
+    L40SX1,
+    #[serde(rename = "l40sx4")]
+    L40SX4,
+    #[serde(rename = "l40sx8")]
+    L40SX8,
+}
+
+impl SpaceRuntimeHardware {
+    pub fn to_string(&self) -> String {
+        match self {
+            SpaceRuntimeHardware::CpuUpgrade => "CPU Upgrade".to_string(),
+            SpaceRuntimeHardware::CpuPerfomance => "CPU Performance".to_string(),
+            SpaceRuntimeHardware::A100Large => "A100 Large".to_string(),
+            SpaceRuntimeHardware::ZeroA10G => "Zero".to_string(),
+            SpaceRuntimeHardware::A10GLarge => "A10G".to_string(),
+            SpaceRuntimeHardware::A10GLargeX2 => "A10G".to_string(),
+            SpaceRuntimeHardware::A10GLargeX4 => "A10G".to_string(),
+            SpaceRuntimeHardware::A10GSmall => "A10G".to_string(),
+            SpaceRuntimeHardware::H100 => "H100".to_string(),
+            SpaceRuntimeHardware::H100X8 => "H100".to_string(),
+            SpaceRuntimeHardware::T4Medium => "T4".to_string(),
+            SpaceRuntimeHardware::T4Small => "T4".to_string(),
+            SpaceRuntimeHardware::L4X1 => "L4".to_string(),
+            SpaceRuntimeHardware::L4X4 => "L4".to_string(),
+            SpaceRuntimeHardware::L40SX1 => "L40S".to_string(),
+            SpaceRuntimeHardware::L40SX4 => "L40S".to_string(),
+            SpaceRuntimeHardware::L40SX8 => "L40S".to_string(),
+            _ => "".to_string(),
+        }
+    }
+}
+
+pub_struct! {
+    SpaceRuntimeHardwareData {
+        current: SpaceRuntimeHardware,
+    }
+}
+
+pub_struct! {
+    SpaceRuntime {
+        stage: SpaceRuntimeStage,
+        hardware: SpaceRuntimeHardwareData,
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Space {
+    #[serde(flatten)]
+    pub base: BaseData,
+    pub subdomain: String,
+    pub host: String,
+    pub models: Vec<String>,
+    pub runtime: SpaceRuntime,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Dataset {
+    #[serde(flatten)]
+    pub base: BaseData,
+    pub downloads: u32,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -236,6 +371,80 @@ pub enum ModelResponse {
     Valid(Model),
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum DatasetResponse {
+    Failed(ErrorResponse),
+    Valid(Dataset),
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum SpaceResponse {
+    Failed(ErrorResponse),
+    Valid(Space),
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum RepoData {
+    Model(Model),
+    Dataset(Dataset),
+    Space(Space),
+}
+
+impl RepoData {
+    pub fn get_id(&self) -> String {
+        match self {
+            RepoData::Model(model) => model.base.id.clone(),
+            RepoData::Dataset(dataset) => dataset.base.id.clone(),
+            RepoData::Space(space) => space.base.id.clone(),
+        }
+    }
+
+    pub fn get_likes(&self) -> String {
+        let likes = match self {
+            RepoData::Model(model) => model.base.likes,
+            RepoData::Dataset(dataset) => dataset.base.likes,
+            RepoData::Space(space) => space.base.likes,
+        };
+
+        fmt_num(likes as i32)
+    }
+
+    pub fn get_license(&self) -> Option<String> {
+        match self {
+            RepoData::Model(model) => model.base.card_data.license.clone(),
+            RepoData::Dataset(dataset) => dataset.base.card_data.license.clone(),
+            RepoData::Space(space) => space.base.card_data.license.clone(),
+        }
+    }
+
+    pub fn get_downloads_count(&self) -> Option<String> {
+        match self {
+            RepoData::Model(model) => Some(fmt_num(model.downloads as i32)),
+            RepoData::Dataset(dataset) => Some(fmt_num(dataset.downloads as i32)),
+            RepoData::Space(_) => None,
+        }
+    }
+
+    pub fn get_repo_tags(&self) -> Vec<String> {
+        match self {
+            RepoData::Model(model) => model.base.tags.clone(),
+            RepoData::Dataset(dataset) => dataset.base.tags.clone(),
+            RepoData::Space(space) => space.base.tags.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum RepoResponse {
+    Model(ModelResponse),
+    Dataset(DatasetResponse),
+    Space(SpaceResponse),
+}
+
 pub fn get_headers() -> HeaderMap {
     let mut headers = HeaderMap::new();
     if !&CONFIG.huggingface_token.is_empty() {
@@ -248,16 +457,28 @@ pub fn get_headers() -> HeaderMap {
     headers
 }
 
-pub async fn get_model(username: &String, repo: &String) -> Result<ModelResponse, Error> {
-    let request_url = format!("https://huggingface.co/api/models/{username}/{repo}");
+async fn request_intl<T: for<'de> serde::Deserialize<'de>>(pathname: &String) -> Result<T, Error> {
+    let request_url = format!("https://huggingface.co/api/{pathname}");
     let headers = get_headers();
     let stats = REQ_CLIENT
         .get(&request_url)
         .headers(headers)
         .send()
         .await?
-        .json::<ModelResponse>()
+        .json::<T>()
         .await?;
 
     Ok(stats)
+}
+
+pub async fn get_model(username: &String, repo: &String) -> Result<ModelResponse, Error> {
+    request_intl::<ModelResponse>(&format!("models/{username}/{repo}")).await
+}
+
+pub async fn get_dataset(username: &String, repo: &String) -> Result<DatasetResponse, Error> {
+    request_intl::<DatasetResponse>(&format!("datasets/{username}/{repo}")).await
+}
+
+pub async fn get_space(username: &String, repo: &String) -> Result<SpaceResponse, Error> {
+    request_intl::<SpaceResponse>(&format!("spaces/{username}/{repo}")).await
 }

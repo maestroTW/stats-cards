@@ -1,6 +1,7 @@
-## 0.1.8 [WIP]
+## 0.1.8
 
 - Added extra check for Huggingface unauthorized api response
+- Added support Pin dataset and space from Hugginface
 
 ## 0.1.7
 
