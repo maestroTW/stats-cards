@@ -7,7 +7,7 @@
   - `catppuccin-latte` (**NEW**)
   - `catppuccin-frappe` (**NEW**)
   - `dark` (**NEW**)
-  - `light` (**NEW**)
+  - `white` (**NEW**)
   - `onedark-pro-flat` (**NEW**)
   - `dracula` (**NEW**)
   - `kanagawa-wave` (**NEW**)
