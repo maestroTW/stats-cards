@@ -348,7 +348,7 @@ pub struct Space {
     pub base: BaseData,
     pub subdomain: String,
     pub host: String,
-    pub models: Vec<String>,
+    // pub models: Option<Vec<String>>,
     pub runtime: SpaceRuntime,
 }
 
