@@ -17,7 +17,7 @@
       font: 400 12px "Segoe UI", system-ui, sans-serif;
     }
   </style>
-  <rect width="400" height="120" rx="6" fill="#24273A" />
+  <rect width="400" height="120" rx="6" fill="{{ theme_data.background }}" />
   <g transform="translate(16, 16)">
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -29,61 +29,61 @@
       <path
         d="M20.23 7.24L12 12L3.77 7.24a1.98 1.98 0 0 1 .7-.71L11 2.76c.62-.35 1.38-.35 2 0l6.53 3.77c.29.173.531.418.7.71z"
         opacity=".25"
-        fill="#8087a2"
+        fill="{{ theme_data.mono_icon }}"
       ></path>
       <path
         d="M12 12v9.5a2.09 2.09 0 0 1-.91-.21L4.5 17.48a2.003 2.003 0 0 1-1-1.73v-7.5a2.06 2.06 0 0 1 .27-1.01L12 12z"
         opacity=".5"
-        fill="#8087a2"
+        fill="{{ theme_data.mono_icon }}"
       ></path>
       <path
         d="M20.5 8.25v7.5a2.003 2.003 0 0 1-1 1.73l-6.62 3.82c-.275.13-.576.198-.88.2V12l8.23-4.76c.175.308.268.656.27 1.01z"
-        fill="#8087a2"
+        fill="{{ theme_data.mono_icon }}"
       ></path>
       {%- else if icon == "dataset" -%}
       <ellipse
         cx="12.5"
         cy="5"
-        fill="#8087a2"
+        fill="{{ theme_data.mono_icon }}"
         fill-opacity="0.25"
         rx="7.5"
         ry="2"
       ></ellipse>
       <path
         d="M12.5 15C16.6421 15 20 14.1046 20 13V20C20 21.1046 16.6421 22 12.5 22C8.35786 22 5 21.1046 5 20V13C5 14.1046 8.35786 15 12.5 15Z"
-        fill="#8087a2"
+        fill="{{ theme_data.mono_icon }}"
         opacity="0.5"
       ></path>
       <path
         d="M12.5 7C16.6421 7 20 6.10457 20 5V11.5C20 12.6046 16.6421 13.5 12.5 13.5C8.35786 13.5 5 12.6046 5 11.5V5C5 6.10457 8.35786 7 12.5 7Z"
-        fill="#8087a2"
+        fill="{{ theme_data.mono_icon }}"
         opacity="0.5"
       ></path>
       <path
         d="M5.23628 12C5.08204 12.1598 5 12.8273 5 13C5 14.1046 8.35786 15 12.5 15C16.6421 15 20 14.1046 20 13C20 12.8273 19.918 12.1598 19.7637 12C18.9311 12.8626 15.9947 13.5 12.5 13.5C9.0053 13.5 6.06886 12.8626 5.23628 12Z"
-        fill="#8087a2"
+        fill="{{ theme_data.mono_icon }}"
       ></path>
       {%- else -%}
       <path
         opacity=".5"
         d="M6.016 14.674v4.31h4.31v-4.31h-4.31ZM14.674 14.674v4.31h4.31v-4.31h-4.31ZM6.016 6.016v4.31h4.31v-4.31h-4.31Z"
-        fill="#8087a2"
+        fill="{{ theme_data.mono_icon }}"
       ></path>
       <path
         opacity=".75"
         fill-rule="evenodd"
         clip-rule="evenodd"
         d="M3 4.914C3 3.857 3.857 3 4.914 3h6.514c.884 0 1.628.6 1.848 1.414a5.171 5.171 0 0 1 7.31 7.31c.815.22 1.414.964 1.414 1.848v6.514A1.914 1.914 0 0 1 20.086 22H4.914A1.914 1.914 0 0 1 3 20.086V4.914Zm3.016 1.102v4.31h4.31v-4.31h-4.31Zm0 12.968v-4.31h4.31v4.31h-4.31Zm8.658 0v-4.31h4.31v4.31h-4.31Zm0-10.813a2.155 2.155 0 1 1 4.31 0 2.155 2.155 0 0 1-4.31 0Z"
-        fill="#8087a2"
+        fill="{{ theme_data.mono_icon }}"
       ></path>
       <path
         opacity=".25"
         d="M16.829 6.016a2.155 2.155 0 1 0 0 4.31 2.155 2.155 0 0 0 0-4.31Z"
-        fill="#8087a2"
+        fill="{{ theme_data.mono_icon }}"
       ></path>
       {%- endif %}
     </svg>
-    <text x="26" y="12" fill="#C6A0F6" class="header">
+    <text x="26" y="12" fill="{{ theme_data.header }}" class="header">
       {{ repo_text|safe }}
     </text>
   </g>
@@ -91,8 +91,14 @@
   <g transform="translate(16, 50)">
     {% for tag in tags %}
     <g transform="translate({{ tag.translate_x }}, 16)" class="stat-text">
-      <rect fill="#363a4f" rx="4" width="{{ tag.width }}" height="21" y="-15" />
-      <text fill="#CAD3F5" x="4">{{ tag.name|safe }}</text>
+      <rect
+        fill="{{ theme_data.surface_background }}"
+        rx="4"
+        width="{{ tag.width }}"
+        height="21"
+        y="-15"
+      />
+      <text fill="{{ theme_data.text }}" x="4">{{ tag.name|safe }}</text>
     </g>
     {% endfor %}
   </g>
@@ -107,12 +113,12 @@
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
-          fill="#8087a2"
+          fill="{{ theme_data.mono_icon }}"
           d="M22.45,6a5.47,5.47,0,0,1,3.91,1.64,5.7,5.7,0,0,1,0,8L16,26.13,5.64,15.64a5.7,5.7,0,0,1,0-8,5.48,5.48,0,0,1,7.82,0L16,10.24l2.53-2.58A5.44,5.44,0,0,1,22.45,6m0-2a7.47,7.47,0,0,0-5.34,2.24L16,7.36,14.89,6.24a7.49,7.49,0,0,0-10.68,0,7.72,7.72,0,0,0,0,10.82L16,29,27.79,17.06a7.72,7.72,0,0,0,0-10.82A7.49,7.49,0,0,0,22.45,4Z"
         ></path>
       </svg>
 
-      <text x="20" y="12.5" fill="#CAD3F5" class="legend-text">
+      <text x="20" y="12.5" fill="{{ theme_data.text }}" class="legend-text">
         {{ likes|safe }}
       </text>
     </g>
@@ -126,12 +132,12 @@
         xmlns="http://www.w3.org/2000/svg"
       >
         <path
-          fill="#8087a2"
+          fill="{{ theme_data.mono_icon }}"
           d="M26 24v4H6v-4H4v4a2 2 0 0 0 2 2h20a2 2 0 0 0 2-2v-4zm0-10l-1.41-1.41L17 20.17V2h-2v18.17l-7.59-7.58L6 14l10 10l10-10z"
         ></path>
       </svg>
 
-      <text x="20" y="12.5" fill="#CAD3F5" class="legend-text">
+      <text x="20" y="12.5" fill="{{ theme_data.text }}" class="legend-text">
         {{ downloads.unwrap()|safe }}
       </text>
     </g>

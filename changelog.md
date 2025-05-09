@@ -1,7 +1,27 @@
+## 0.2.0
+
+- Added support select Theme with param `theme`:
+
+  - `catppuccin-macchiato` (default)
+  - `catppuccin-mocha` (**NEW**)
+  - `catppuccin-latte` (**NEW**)
+  - `catppuccin-frappe` (**NEW**)
+  - `dark` (**NEW**)
+  - `light` (**NEW**)
+  - `onedark-pro-flat` (**NEW**)
+  - `dracula` (**NEW**)
+  - `kanagawa-wave` (**NEW**)
+  - `ayu-mirage` (**NEW**)
+  - `ayu-white` (**NEW**)
+  - `monokai-classic` (**NEW**)
+
+- Fixed `Unknown API error` if Huggingface space doesn't have `models` property in response
+- (!) Fixed typo in `catppuccin-macchiato` theme (old `catpuccin-macchiato`). Check spelling in your urls
+
 ## 0.1.8
 
 - Added extra check for Huggingface unauthorized api response
-- Added support Pin dataset and space from Hugginface
+- Added support Pin dataset and space from Huggingface
 
 ## 0.1.7
 

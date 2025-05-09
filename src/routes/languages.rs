@@ -1,5 +1,7 @@
 use crate::api::github::{GithubStatsResponse, Repo as GithubRepo};
 use crate::api::{github, wakatime, wakatime::StatsResponse as WakaTimeStatsResponse};
+use crate::data::config::CONFIG;
+use crate::data::theme::{Theme, ThemeData};
 use crate::prepared_templates::PreparedTemplate;
 use crate::templates;
 
@@ -22,9 +24,9 @@ const MAX_BAR_WIDTH: f32 = 275.0;
 const DEFAULT_LANG_COLOR: &str = "#818181";
 
 #[derive(Deserialize, Serialize)]
-#[allow(dead_code)]
 pub struct Params {
     username: String,
+    theme: Option<Theme>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -46,6 +48,7 @@ pub struct CompactLanguagesTemplate {
     name: String,
     stats_bar: String,
     bar_legend: String,
+    theme_data: ThemeData,
 }
 
 async fn get_top_langs_by_waka_intl(
@@ -192,12 +195,14 @@ async fn get_top_langs_by_github_intl(
 
 pub fn render_top_langs(
     username: String,
+    theme: Theme,
     top_langs_res: Result<Vec<LanguageStat>, PreparedTemplate>,
 ) -> Response {
     if !top_langs_res.is_ok() {
         return top_langs_res.unwrap_err().render();
     }
 
+    let theme_data = theme.get_data();
     let stats = top_langs_res.unwrap();
     let mut bar_start_x = 20.0;
     let mut column_start_y = 93;
@@ -230,10 +235,10 @@ pub fn render_top_langs(
                 r##"
                 <g>
                     <rect x="{start_x}" y="{start_y}" width="12" height="12" rx="6" fill="{0}" />
-                    <text x="{text_x}" y="{text_y}" fill="#CAD3F5" class="stat-text">{1} {2:.2}%</text>
+                    <text x="{text_x}" y="{text_y}" fill="{1}" class="stat-text">{2} {3:.2}%</text>
                 </g>
             "##,
-                stat.color, stat.name, stat.percent,
+                stat.color, &theme_data.text, stat.name, stat.percent,
             );
 
             column_start_y = if idx == 2 { 93 } else { column_start_y + 24 };
@@ -246,6 +251,7 @@ pub fn render_top_langs(
         name: username,
         stats_bar: bar_data.join("\n"),
         bar_legend: bar_legend.join("\n"),
+        theme_data,
     };
     let svg_template = templates::SVGTemplate(template);
     templates::SVGTemplate::<CompactLanguagesTemplate>::into_response(svg_template)
@@ -256,8 +262,9 @@ pub async fn get_waka_top_langs(
     Query(params): Query<Params>,
 ) -> Response {
     let username = params.username;
+    let theme = params.theme.unwrap_or(CONFIG.default_theme.clone());
     let top_langs_res = get_top_langs_by_waka_intl(cache, &username).await;
-    render_top_langs(username, top_langs_res)
+    render_top_langs(username, theme, top_langs_res)
 }
 
 pub async fn get_github_top_langs(
@@ -265,6 +272,7 @@ pub async fn get_github_top_langs(
     Query(params): Query<Params>,
 ) -> Response {
     let username = params.username;
+    let theme = params.theme.unwrap_or(CONFIG.default_theme.clone());
     let top_langs_res = get_top_langs_by_github_intl(cache, &username).await;
-    render_top_langs(username, top_langs_res)
+    render_top_langs(username, theme, top_langs_res)
 }

@@ -1,3 +1,4 @@
+use crate::data::theme::Theme;
 use lazy_static::lazy_static;
 use serde::Deserialize;
 use std::{env, time::Duration};
@@ -20,6 +21,7 @@ pub struct Config {
     pub user_agent: String,
     pub github_token: String,
     pub huggingface_token: String,
+    pub default_theme: Theme,
 }
 
 lazy_static! {
@@ -49,5 +51,6 @@ lazy_static! {
             .filter(|val| !val.is_empty())
             .map(|val| format!("Bearer {val}"))
             .unwrap_or_default(),
+        default_theme: Theme::CatppuccinMacchiato,
     };
 }

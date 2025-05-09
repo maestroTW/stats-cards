@@ -1,6 +1,8 @@
 use crate::api::github::{
     self, ActivityResponse as GithubActivityResponse, ContributionMonth as GithubContributionMonth,
 };
+use crate::data::config::CONFIG;
+use crate::data::theme::{ActivityColor, Theme, ThemeData};
 use crate::prepared_templates::PreparedTemplate;
 use crate::templates;
 
@@ -20,6 +22,7 @@ const DEFAULT_START_X: i32 = 50;
 #[allow(dead_code)]
 pub struct Params {
     username: String,
+    theme: Option<Theme>,
     period: Option<String>,
     with_title: Option<bool>,
 }
@@ -46,6 +49,7 @@ pub struct ActivityMonth {
 #[template(path = "compact/activity.html")]
 pub struct CompactActivityTemplate {
     name: String,
+    theme_data: ThemeData,
     stats_data: String,
     months_legend: String,
     week_legend: String,
@@ -66,37 +70,6 @@ impl Period {
             "year" => Some(Period::Year as u32),
             "6_months" => Some(Period::SixMonths as u32),
             "3_months" => Some(Period::ThreeMonths as u32),
-            _ => None,
-        }
-    }
-}
-
-pub enum ActivityColor {
-    Inactive,
-    Small,
-    Medium,
-    High,
-    VeryHigh,
-}
-
-impl ActivityColor {
-    fn to_string(&self) -> String {
-        match self {
-            ActivityColor::Inactive => "#494d64".to_string(),
-            ActivityColor::Small => "#42583c".to_string(),
-            ActivityColor::Medium => "#7ea072".to_string(),
-            ActivityColor::High => "#a6da95".to_string(),
-            ActivityColor::VeryHigh => "#8ddb73".to_string(),
-        }
-    }
-
-    pub fn from_key(key: &str) -> Option<ActivityColor> {
-        match key {
-            "#ebedf0" => Some(ActivityColor::Inactive),
-            "#9be9a8" => Some(ActivityColor::Small),
-            "#40c463" => Some(ActivityColor::Medium),
-            "#30a14e" => Some(ActivityColor::High),
-            "#216e39" => Some(ActivityColor::VeryHigh),
             _ => None,
         }
     }
@@ -215,12 +188,14 @@ async fn get_activity_github_intl(
 pub fn render_activity(
     username: String,
     with_title: bool,
+    theme: Theme,
     activity_res: Result<Vec<ActivityMonth>, PreparedTemplate>,
 ) -> Response {
     if !activity_res.is_ok() {
         return activity_res.unwrap_err().render();
     }
 
+    let theme_data = theme.get_data();
     let stats = activity_res.unwrap();
     let first_day = stats
         .get(0)
@@ -249,7 +224,7 @@ pub fn render_activity(
             let day_els: Vec<String> = week.days.iter().map(|day| {
                 last_day_x = day_start_x;
                 let day_color = match ActivityColor::from_key(&day.color.as_str()) {
-                    Some(color) => color.to_string(),
+                    Some(color) => theme.get_activity_color(color),
                     None => day.color.clone()
                 };
                 let el = format!(r##"<rect x="{day_start_x}" y="{day_start_y}" width="12" height="12" rx="2" fill="{day_color}" />"##);
@@ -270,7 +245,7 @@ pub fn render_activity(
         } else {
             months_start_x
         };
-        let month_title = format!(r##"<text x="{month_el_offset}" y="{month_legend_y}" fill="#CAD3F5" class="legend-text">{0}</text>"##,  stat.name);
+        let month_title = format!(r##"<text x="{month_el_offset}" y="{month_legend_y}" fill="{0}" class="legend-text">{1}</text>"##, theme_data.text, stat.name);
         months_legend.push(month_title);
 
         let weeks_count = stat.weeks.len() as i32;
@@ -280,22 +255,20 @@ pub fn render_activity(
         if weeks_count >= 5 {
             months_start_x += 5;
         }
-        // if weeks_count == &(5 as usize) {
-        //     months_start_x += 7;
-        // }
 
         format!(r##"<g>{0}</g>"##, week_els.join("\n"))
     }).collect();
 
     let width = (last_day_x + DAY_BLOCK_SIZE * 2) as u32;
     let week_legend: Vec<String> = ["Mon", "Wed", "Fri"].iter().map(|name| {
-        let el = format!(r##"<text x="20" y="{week_legend_y}" fill="#CAD3F5" class="legend-text">{name}</text>"##);
+        let el = format!(r##"<text x="20" y="{week_legend_y}" fill="{0}" class="legend-text">{name}</text>"##, theme_data.text);
         week_legend_y += 32;
         el
     }).collect();
 
     let template = CompactActivityTemplate {
         name: username,
+        theme_data,
         stats_data: stats_data.join("\n"),
         months_legend: months_legend.join("\n"),
         week_legend: week_legend.join("\n"),
@@ -312,6 +285,7 @@ pub async fn get_github_activity_graph(
     Query(params): Query<Params>,
 ) -> Response {
     let username = params.username;
+    let theme = params.theme.unwrap_or(CONFIG.default_theme.clone());
     let period = match params.period {
         Some(period) => period,
         None => "3_months".to_string(),
@@ -321,5 +295,5 @@ pub async fn get_github_activity_graph(
         None => true,
     };
     let activity_res = get_activity_github_intl(cache, &username, &period).await;
-    render_activity(username, with_title, activity_res)
+    render_activity(username, with_title, theme, activity_res)
 }

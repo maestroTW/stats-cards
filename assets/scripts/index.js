@@ -2,18 +2,52 @@ const DEFAULT_USERNAME = "ilyhalight";
 
 const themes = [
   {
-    value: "catpuccin-macchiato",
+    value: "catppuccin-macchiato",
     label: "Catppuccin Macchiato",
+  },
+  {
+    value: "catppuccin-mocha",
+    label: "Catppuccin Mocha",
+  },
+  {
+    value: "catppuccin-latte",
+    label: "Catppuccin Latte",
+  },
+  {
+    value: "catppuccin-frappe",
+    label: "Catppuccin Frappé",
   },
   {
     value: "dark",
     label: "Dark",
-    disabled: true,
   },
   {
     value: "white",
     label: "White",
-    disabled: true,
+  },
+  {
+    value: "onedark-pro-flat",
+    label: "One Dark Pro Flat",
+  },
+  {
+    value: "dracula",
+    label: "Dracula",
+  },
+  {
+    value: "kanagawa-wave",
+    label: "Kanagawa Wave",
+  },
+  {
+    value: "ayu-mirage",
+    label: "Ayu Mirage",
+  },
+  {
+    value: "ayu-white",
+    label: "Ayu White",
+  },
+  {
+    value: "monokai-classic",
+    label: "Monokai Classic",
   },
 ];
 
@@ -203,6 +237,15 @@ function createDropdown({
   };
 }
 
+const selectThemeOption = {
+  id: "theme",
+  label: "Select theme",
+  query: "theme",
+  type: "dropdown",
+  search: true,
+  value: themes,
+};
+
 const cards = {
   "languages-github": {
     label: "Languages (GitHub)",
@@ -215,13 +258,7 @@ const cards = {
         type: "input",
         value: DEFAULT_USERNAME,
       },
-      {
-        id: "theme",
-        label: "Select theme",
-        query: "theme",
-        type: "dropdown",
-        value: themes,
-      },
+      selectThemeOption,
       {
         id: "layout",
         label: "Select layout",
@@ -242,13 +279,7 @@ const cards = {
         type: "input",
         value: "Toil",
       },
-      {
-        id: "theme",
-        label: "Select theme",
-        query: "theme",
-        type: "dropdown",
-        value: themes,
-      },
+      selectThemeOption,
       {
         id: "layout",
         label: "Select layout",
@@ -269,13 +300,7 @@ const cards = {
         type: "input",
         value: DEFAULT_USERNAME,
       },
-      {
-        id: "theme",
-        label: "Select theme",
-        query: "theme",
-        type: "dropdown",
-        value: themes,
-      },
+      selectThemeOption,
       {
         id: "activity-period",
         label: "Select period",
@@ -317,6 +342,7 @@ const cards = {
         type: "dropdown",
         value: hfPinTypes,
       },
+      selectThemeOption,
       {
         id: "show-owner",
         label: "Show owner",

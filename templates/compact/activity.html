@@ -14,9 +14,14 @@
       font: 500 12px "Segoe UI", system-ui, sans-serif;
     }
   </style>
-  <rect width="{{ width }}" height="{{ height }}" rx="6" fill="#24273A" />
+  <rect
+    width="{{ width }}"
+    height="{{ height }}"
+    rx="6"
+    fill="{{ theme_data.background }}"
+  />
   {% if with_title %}
-  <text x="20" y="32" fill="#C6A0F6" class="header">
+  <text x="20" y="32" fill="{{ theme_data.header }}" class="header">
     {{ name }}'s activity graph
   </text>
   {% endif %}

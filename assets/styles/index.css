@@ -7,6 +7,7 @@
   --text-color: #cfcfcf;
   --title-color: #fff;
   --highlight-gradient: linear-gradient(90deg, #f5a97f, #f58181);
+  --mono-hover-color: #f1eeeb;
   --separator-color: #5e5e5e;
   --popup-color: #1d1d1d;
   --dropdown-separator-color: #3e3d3d;
@@ -166,6 +167,11 @@ a:hover {
   border-radius: 0.5rem;
   padding: 0.5rem 1rem;
   cursor: pointer;
+  transition: background 0.25s ease;
+}
+
+.button:hover {
+  background: var(--mono-hover-color);
 }
 
 .button.button_outline {

@@ -70,9 +70,9 @@ List of planned cards:
 
 ## Themes
 
-Available themes:
+You can select theme for your card with param `theme=THEME_NAME`. Default theme is `catppuccin-macchiato`.
 
-- [Catpuccin Macchiato](https://github.com/catppuccin/catppuccin) (default)
+Let's check other available themes [here](THEMES.md)
 
 ## How to run
 

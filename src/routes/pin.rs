@@ -1,6 +1,8 @@
 use std::vec;
 
 use crate::api::huggingface::{self};
+use crate::data::config::CONFIG;
+use crate::data::theme::{Theme, ThemeData};
 use crate::prepared_templates::PreparedTemplate;
 use crate::templates;
 use crate::{
@@ -26,6 +28,7 @@ const MAX_PIN_WIDTH: usize = 400;
 pub struct Params {
     username: String,
     repo: String,
+    theme: Option<Theme>,
     #[serde(rename = "type")]
     typename: HFPinIcon,
     show_owner: Option<bool>,
@@ -69,6 +72,7 @@ pub struct HFPinTemplate<'a> {
     downloads: Option<&'a String>,
     icon: HFPinIcon,
     tags: Vec<HFTag>,
+    theme_data: ThemeData,
 }
 
 fn hf_handle_error_template(err: HFErrorResponse) -> PreparedTemplate {
@@ -144,6 +148,7 @@ pub fn render_huggingface_pin(
     username: String,
     repo: String,
     show_owner: bool,
+    theme: Theme,
     pin_data: Result<HFRepoData, PreparedTemplate>,
 ) -> Response {
     let raw_data = match pin_data {
@@ -227,6 +232,7 @@ pub fn render_huggingface_pin(
         repo.clone()
     };
 
+    let theme_data = theme.get_data();
     let template = HFPinTemplate {
         name: username,
         desc: repo,
@@ -235,6 +241,7 @@ pub fn render_huggingface_pin(
         likes,
         icon,
         tags,
+        theme_data,
     };
 
     let svg_template = templates::SVGTemplate(template);
@@ -245,6 +252,7 @@ pub async fn get_huggingface_pin(
     State(cache): State<Cache<String, String>>,
     Query(params): Query<Params>,
 ) -> Response {
+    let theme = params.theme.unwrap_or(CONFIG.default_theme.clone());
     let username = params.username;
     let repo = params.repo;
     let typename = params.typename;
@@ -254,5 +262,5 @@ pub async fn get_huggingface_pin(
         false
     };
     let repo_data = get_huggingface_pin_impl(cache, &username, &repo, &typename).await;
-    render_huggingface_pin(username, repo, show_owner, repo_data)
+    render_huggingface_pin(username, repo, show_owner, theme, repo_data)
 }
