@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  stats-cards:
+    build: .
+    container_name: stats-cards
+    restart: always
+    ports:
+      - "7674:7674"
+    networks:
+      - stc-net
+    environment:
+      GITHUB_TOKEN: ""
+      HUGGINGFACE_TOKEN: ""
+
+networks:
+  stc-net:
