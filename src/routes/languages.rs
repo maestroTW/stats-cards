@@ -1,4 +1,4 @@
-use crate::api::github::{GithubStatsResponse, Repo as GithubRepo};
+use crate::api::github::GraphQLResponse;
 use crate::api::{github, wakatime, wakatime::StatsResponse as WakaTimeStatsResponse};
 use crate::data::config::CONFIG;
 use crate::data::theme::{Theme, ThemeData};
@@ -10,6 +10,7 @@ use axum::{
     extract::{Query, State},
     response::{IntoResponse, Response},
 };
+use itertools::Itertools;
 use lazy_static::lazy_static;
 use moka::future::Cache;
 use serde::{Deserialize, Serialize};
@@ -122,68 +123,70 @@ async fn get_top_langs_by_github_intl(
         return Ok(langs);
     }
 
-    let stats = github::get_stats(username).await;
+    let stats = github::get_languages(username).await;
     if !stats.is_ok() {
         return Err(PreparedTemplate::Unknown);
     }
 
     let languages_raw_data = match stats.unwrap() {
-        GithubStatsResponse::Failed(err) => {
-            let err_template = match err.message.as_str() {
-                "Bad credentials" => PreparedTemplate::BadCredentials,
-                "Not Found" => PreparedTemplate::FailedFindUser,
-                _ => PreparedTemplate::Unknown,
+        GraphQLResponse::Failed(err) => {
+            let err_template = if err.message.contains("rate limit exceeded") {
+                PreparedTemplate::APIRateLimit
+            } else if err.message.contains("Bad credentials") {
+                PreparedTemplate::BadCredentials
+            } else {
+                PreparedTemplate::Unknown
             };
             return Err(err_template);
         }
-        GithubStatsResponse::Valid(res) => res,
+        GraphQLResponse::Valid(res) => match res.data.user {
+            None => return Err(PreparedTemplate::FailedFindUser),
+            Some(user_data) => user_data.repositories.nodes,
+        },
     };
 
-    let languages_data: Vec<&GithubRepo> = languages_raw_data
-        .iter()
-        .filter(|&lang| !lang.language.is_none())
-        .collect();
-    if languages_data.len() == 0 {
+    if languages_raw_data.len() == 0 {
         return Err(PreparedTemplate::FailedFindLanguages);
     }
 
-    let mut langs_data: HashMap<String, i32> = HashMap::new();
-    for lang in languages_data {
-        let lang_name = lang.language.as_ref().unwrap();
-        langs_data
-            .entry(lang_name.to_string())
-            .and_modify(|count| *count += 1)
-            .or_insert(1);
-    }
+    let mut langs_data: HashMap<String, i64> = HashMap::new();
+    languages_raw_data
+        .iter()
+        .filter(|&lang| lang.languages.edges.len() > 0)
+        .flat_map(|lang| &lang.languages.edges)
+        .for_each(|lang| {
+            langs_data
+                .entry(lang.node.name.clone())
+                .and_modify(|count| {
+                    *count += lang.size as i64;
+                })
+                .or_insert(lang.size as i64);
+        });
 
-    let mut first_languages = Vec::new();
-    for _ in 0..6 {
-        let possible_data = langs_data.iter().max_by(|a, b| a.1.cmp(&b.1));
-        if possible_data.is_none() {
-            break;
-        }
+    let first_languages = langs_data
+        .iter()
+        .sorted_by(|a, b| Ord::cmp(&b.1, &a.1))
+        .take(6)
+        .collect::<Vec<(&String, &i64)>>();
 
-        let top_lang_data = possible_data.unwrap();
-        let lang_name = top_lang_data.0.to_string();
-        let min_lang = MinimalLanguageStat {
-            name: lang_name.to_string(),
-            count: top_lang_data.1.to_owned() as f32,
-        };
-
-        first_languages.push(min_lang);
-        langs_data.remove(&lang_name);
-    }
-
-    let max_percent = first_languages.iter().fold(0.0, |acc, val| acc + val.count);
+    let max_bytes = first_languages
+        .iter()
+        .fold(0 as i64, |acc, val| acc + val.1) as f64;
     let top_langs: Vec<LanguageStat> = first_languages
         .iter()
-        .map(|lang| LanguageStat {
-            name: lang.name.clone(),
-            color: match LANG_TO_COLORS.get(&lang.name.to_lowercase()) {
-                None => DEFAULT_LANG_COLOR.to_string(),
-                Some(color) => color.clone(),
-            },
-            percent: 100.0 / (max_percent / lang.count),
+        .map(|(name, size)| {
+            let lang_name = name.to_string();
+            let lang_size = **size as f64;
+            let percent = (lang_size / max_bytes * 100.0) as f32;
+
+            LanguageStat {
+                name: lang_name,
+                color: match LANG_TO_COLORS.get(&name.to_lowercase()) {
+                    None => DEFAULT_LANG_COLOR.to_string(),
+                    Some(color) => color.clone(),
+                },
+                percent,
+            }
         })
         .collect();
 

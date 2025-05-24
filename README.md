@@ -18,6 +18,8 @@ Current list of available cards:
 
    <img src="https://stats-cards.toil.cc/v1/top-langs/github?username=ilyhalight" alt="demo" />
 
+  \* Required `GITHUB_TOKEN` in `.env`
+
 - Github Activity Graph
 
   Endpoint: `/v1/activity/github?username=ilyhalight&period=3_months&with_title=true`

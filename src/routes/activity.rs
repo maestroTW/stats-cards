@@ -113,14 +113,10 @@ async fn get_activity_github_intl(
             };
             return Err(err_template);
         }
-        GithubActivityResponse::Valid(res) => {
-            let user_data = res.data.user;
-            if user_data.is_none() {
-                return Err(PreparedTemplate::FailedFindUser);
-            }
-
-            user_data.unwrap()
-        }
+        GithubActivityResponse::Valid(res) => match res.data.user {
+            None => return Err(PreparedTemplate::FailedFindUser),
+            Some(user_data) => user_data,
+        },
     };
 
     let calendar_data = user.contributions_collection.contribution_calendar;

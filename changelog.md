@@ -1,3 +1,9 @@
+## 0.2.1
+
+- Improved calculating Github languages stats. Now we count them based on the number of bytes in the first 100 repositories by the number of stars.
+- (!) Now to use Github languages requires `GITHUB_TOKEN` in `.env` file
+- Bump depends
+
 ## 0.2.0
 
 - Added support select Theme with param `theme`:
