@@ -1,3 +1,9 @@
+## 0.2.2
+
+- Updated `html` language color
+- Added `vue.js` (alias to `vue`) language color
+- Bump depends
+
 ## 0.2.1
 
 - Improved calculating Github languages stats. Now we count them based on the number of bytes in the first 100 repositories by the number of stars.
