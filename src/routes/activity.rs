@@ -3,7 +3,7 @@ use crate::api::github::{
 };
 use crate::data::config::CONFIG;
 use crate::data::theme::{ActivityColor, Theme, ThemeData};
-use crate::prepared_templates::PreparedTemplate;
+use crate::prepared_templates::{PreparedTemplate, gh_handle_error_template};
 use crate::templates;
 
 use askama::Template;
@@ -103,16 +103,7 @@ async fn get_activity_github_intl(
     }
 
     let user = match stats.unwrap() {
-        GithubActivityResponse::Failed(err) => {
-            let err_template = if err.message.contains("rate limit exceeded") {
-                PreparedTemplate::APIRateLimit
-            } else if err.message.contains("Bad credentials") {
-                PreparedTemplate::BadCredentials
-            } else {
-                PreparedTemplate::Unknown
-            };
-            return Err(err_template);
-        }
+        GithubActivityResponse::Failed(err) => return Err(gh_handle_error_template(err)),
         GithubActivityResponse::Valid(res) => match res.data.user {
             None => return Err(PreparedTemplate::FailedFindUser),
             Some(user_data) => user_data,

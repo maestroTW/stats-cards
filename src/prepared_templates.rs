@@ -1,4 +1,9 @@
-use crate::templates::{ErrorTemplate, SVGTemplate};
+use crate::{
+    api::{
+        github::ErrorResponse as GHErrorResponse, huggingface::ErrorResponse as HFErrorResponse,
+    },
+    templates::{ErrorTemplate, SVGTemplate},
+};
 
 use axum::response::{IntoResponse, Response};
 
@@ -43,5 +48,24 @@ impl PreparedTemplate {
 
         let svg_template = SVGTemplate(template);
         return SVGTemplate::<ErrorTemplate>::into_response(svg_template);
+    }
+}
+
+pub fn gh_handle_error_template(err: GHErrorResponse) -> PreparedTemplate {
+    if err.message.contains("rate limit exceeded") {
+        PreparedTemplate::APIRateLimit
+    } else if err.message.contains("Bad credentials") {
+        PreparedTemplate::BadCredentials
+    } else {
+        PreparedTemplate::Unknown
+    }
+}
+
+pub fn hf_handle_error_template(err: HFErrorResponse) -> PreparedTemplate {
+    match err.error.as_str() {
+        "Invalid credentials in Authorization header" => PreparedTemplate::BadCredentials,
+        "Invalid username or password." => PreparedTemplate::BadCredentials,
+        "Repository not found" => PreparedTemplate::FailedFindRepo,
+        _ => PreparedTemplate::Unknown,
     }
 }

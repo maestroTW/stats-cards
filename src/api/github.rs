@@ -1,4 +1,6 @@
-use axum::http::{HeaderMap, HeaderValue};
+use std::str::FromStr;
+
+use axum::http::{HeaderMap, HeaderName, HeaderValue};
 use lazy_static::lazy_static;
 use reqwest::Error;
 use reqwest::{
@@ -98,6 +100,15 @@ pub struct OptionUserData<T> {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct Repository {
+    pub name: String,
+    pub description: Option<String>,
+    pub language: Option<String>,
+    pub stargazers_count: u32,
+    pub forks_count: u32,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct SuccessResponse<T> {
     pub data: T,
 }
@@ -114,8 +125,16 @@ pub enum GraphQLResponse<T> {
     Valid(SuccessResponse<T>),
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum RestResponse<T> {
+    Failed(ErrorResponse),
+    Valid(T),
+}
+
 pub type ActivityResponse = GraphQLResponse<OptionUserData<UserActivity>>;
 pub type LanguagesResponse = GraphQLResponse<OptionUserData<UserLanguages>>;
+pub type RepositoryResponse = RestResponse<Repository>;
 
 pub fn get_headers() -> HeaderMap {
     let mut headers = HeaderMap::new();
@@ -150,6 +169,25 @@ pub async fn request_graphql<T: for<'de> Deserialize<'de>>(
         .post(&request_url)
         .headers(headers)
         .json(&request_body)
+        .send()
+        .await?
+        .json::<T>()
+        .await?;
+
+    Ok(data)
+}
+
+pub async fn request_get_api<T: for<'de> Deserialize<'de>>(pathname: &str) -> Result<T, Error> {
+    let request_url = format!("https://api.github.com{pathname}");
+    let mut headers = get_headers();
+    headers.insert(
+        HeaderName::from_str("X-GitHub-Api-Version").unwrap(),
+        HeaderValue::from_str("2022-11-28").unwrap(),
+    );
+
+    let data = REQ_CLIENT
+        .get(&request_url)
+        .headers(headers)
         .send()
         .await?
         .json::<T>()
@@ -217,4 +255,9 @@ pub async fn get_activity(
     );
 
     request_graphql::<ActivityResponse>(&graphql_query).await
+}
+
+pub async fn get_repo(username: &String, repo_name: &String) -> Result<RepositoryResponse, Error> {
+    let pathname = format!("/repos/{username}/{repo_name}");
+    request_get_api::<RepositoryResponse>(&pathname).await
 }

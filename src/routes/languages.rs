@@ -1,8 +1,9 @@
 use crate::api::github::GraphQLResponse;
 use crate::api::{github, wakatime, wakatime::StatsResponse as WakaTimeStatsResponse};
 use crate::data::config::CONFIG;
+use crate::data::language::get_lang_color;
 use crate::data::theme::{Theme, ThemeData};
-use crate::prepared_templates::PreparedTemplate;
+use crate::prepared_templates::{PreparedTemplate, gh_handle_error_template};
 use crate::templates;
 
 use askama::Template;
@@ -11,18 +12,11 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use itertools::Itertools;
-use lazy_static::lazy_static;
 use moka::future::Cache;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-lazy_static! {
-    static ref LANG_TO_COLORS: HashMap<String, String> =
-        serde_json::from_str(include_str!("../../data/lang2hex.json")).unwrap();
-}
-
 const MAX_BAR_WIDTH: f32 = 275.0;
-const DEFAULT_LANG_COLOR: &str = "#818181";
 
 #[derive(Deserialize, Serialize)]
 pub struct Params {
@@ -99,10 +93,7 @@ async fn get_top_langs_by_waka_intl(
         .iter()
         .map(|lang| LanguageStat {
             name: lang.name.clone(),
-            color: match LANG_TO_COLORS.get(&lang.name.to_lowercase()) {
-                None => DEFAULT_LANG_COLOR.to_string(),
-                Some(color) => color.clone(),
-            },
+            color: get_lang_color(&lang.name),
             percent: 100.0 / (max_percent / lang.percent),
         })
         .collect();
@@ -129,16 +120,7 @@ async fn get_top_langs_by_github_intl(
     }
 
     let languages_raw_data = match stats.unwrap() {
-        GraphQLResponse::Failed(err) => {
-            let err_template = if err.message.contains("rate limit exceeded") {
-                PreparedTemplate::APIRateLimit
-            } else if err.message.contains("Bad credentials") {
-                PreparedTemplate::BadCredentials
-            } else {
-                PreparedTemplate::Unknown
-            };
-            return Err(err_template);
-        }
+        GraphQLResponse::Failed(err) => return Err(gh_handle_error_template(err)),
         GraphQLResponse::Valid(res) => match res.data.user {
             None => return Err(PreparedTemplate::FailedFindUser),
             Some(user_data) => user_data.repositories.nodes,
@@ -181,10 +163,7 @@ async fn get_top_langs_by_github_intl(
 
             LanguageStat {
                 name: lang_name,
-                color: match LANG_TO_COLORS.get(&name.to_lowercase()) {
-                    None => DEFAULT_LANG_COLOR.to_string(),
-                    Some(color) => color.clone(),
-                },
+                color: get_lang_color(name),
                 percent,
             }
         })

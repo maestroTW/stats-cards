@@ -60,12 +60,24 @@ Current list of available cards:
 
   \* Required `HUGGINGFACE_TOKEN` in `.env`
 
+- Github Extra Pin Repository
+
+  Endpoint: `/v1/pin/github?username=ilyhalight&repo=stats-cards&show_owner=true`
+
+  Support show owner name with param `show_owner`:
+
+  - `true`
+  - `false` (default)
+
+  **Cyrillic supported!**
+
+   <img src="https://stats-cards.toil.cc/v1/pin/github?username=ilyhalight&repo=stats-cards&show_owner=true" alt="demo with show_owner" />
+
 List of planned cards:
 
 - [WIP] [Github Streak](https://github.com/DenverCoder1/github-readme-streak-stats)
 - [WIP] [Wakatime Streak](https://github.com/DenverCoder1/github-readme-streak-stats)
 - [WIP] [Github stats](https://github.com/anuraghazra/github-readme-stats)
-- [WIP] [GitHub Extra Pins](https://github.com/anuraghazra/github-readme-stats)
 - [WIP] [GitHub Gist Pins](https://github.com/anuraghazra/github-readme-stats)
 
 \* links contain design examples

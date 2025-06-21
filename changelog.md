@@ -1,3 +1,7 @@
+## 0.2.3
+
+- Added support Github Extra pin (Cyrillic supported!)
+
 ## 0.2.2
 
 - Updated `html` language color
