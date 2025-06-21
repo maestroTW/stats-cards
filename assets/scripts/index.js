@@ -1,4 +1,5 @@
 const DEFAULT_USERNAME = "ilyhalight";
+const DEFAULT_GH_REPO = "stats-cards";
 
 const themes = [
   {
@@ -341,6 +342,34 @@ const cards = {
         query: "type",
         type: "dropdown",
         value: hfPinTypes,
+      },
+      selectThemeOption,
+      {
+        id: "show-owner",
+        label: "Show owner",
+        query: "show_owner",
+        type: "checkbox",
+        value: false,
+      },
+    ],
+  },
+  "pin-github": {
+    label: "Pin (GitHub)",
+    path: "pin/github",
+    options: [
+      {
+        id: "github-username",
+        label: "Select username",
+        query: "username",
+        type: "input",
+        value: DEFAULT_USERNAME,
+      },
+      {
+        id: "github-repo",
+        label: "Select repo",
+        query: "repo",
+        type: "input",
+        value: DEFAULT_GH_REPO,
       },
       selectThemeOption,
       {
