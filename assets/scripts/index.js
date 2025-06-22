@@ -1,5 +1,6 @@
 const DEFAULT_USERNAME = "ilyhalight";
 const DEFAULT_GH_REPO = "stats-cards";
+const DEFAULT_GIST_ID = "6f47e86d2510bce28f8e7f42ae84c716";
 
 const themes = [
   {
@@ -370,6 +371,27 @@ const cards = {
         query: "repo",
         type: "input",
         value: DEFAULT_GH_REPO,
+      },
+      selectThemeOption,
+      {
+        id: "show-owner",
+        label: "Show owner",
+        query: "show_owner",
+        type: "checkbox",
+        value: false,
+      },
+    ],
+  },
+  "pin-gist": {
+    label: "Pin (Gist)",
+    path: "pin/gist",
+    options: [
+      {
+        id: "gist-id",
+        label: "Select id",
+        query: "id",
+        type: "input",
+        value: DEFAULT_GIST_ID,
       },
       selectThemeOption,
       {

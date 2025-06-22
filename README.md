@@ -73,6 +73,19 @@ Current list of available cards:
 
    <img src="https://stats-cards.toil.cc/v1/pin/github?username=ilyhalight&repo=stats-cards&show_owner=true" alt="demo with show_owner" />
 
+- Github Extra Pin Gist
+
+  Endpoint: `/v1/pin/gist?id=6f47e86d2510bce28f8e7f42ae84c716&show_owner=true`
+
+  Support show owner name with param `show_owner`:
+
+  - `true`
+  - `false` (default)
+
+  **Cyrillic supported!**
+
+   <img src="https://stats-cards.toil.cc/v1/pin/gist?id=6f47e86d2510bce28f8e7f42ae84c716&show_owner=true" alt="demo with show_owner" />
+
 List of planned cards:
 
 - [WIP] [Github Streak](https://github.com/DenverCoder1/github-readme-streak-stats)

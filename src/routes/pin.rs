@@ -1,6 +1,8 @@
 use std::vec;
 
-use crate::api::github::{self, Repository, RestResponse};
+use crate::api::github::{
+    self, Gist, GistResponse as GithubGistResponse, Repository, RestResponse,
+};
 use crate::api::huggingface::{self};
 use crate::data::config::CONFIG;
 use crate::data::language::get_lang_color;
@@ -43,6 +45,13 @@ pub struct HFParams {
 pub struct GHParams {
     username: String,
     repo: String,
+    theme: Option<Theme>,
+    show_owner: Option<bool>,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct GistParams {
+    id: String,
     theme: Option<Theme>,
     show_owner: Option<bool>,
 }
@@ -440,4 +449,139 @@ pub async fn get_github_repo_pin(
 
     let repo_data = get_github_pin_impl(cache, &username, &repo).await;
     render_github_pin(username, repo, show_owner, theme, repo_data)
+}
+
+pub async fn gist_get_data(id: &String) -> Result<Gist, PreparedTemplate> {
+    let data = github::get_gist(id).await;
+
+    if !data.is_ok() {
+        return Err(PreparedTemplate::Unknown);
+    }
+
+    match data.unwrap() {
+        GithubGistResponse::Failed(res) => return Err(gh_handle_error_template(res)),
+        GithubGistResponse::Valid(res) => match res.data.viewer.gist {
+            None => Err(PreparedTemplate::FailedFindRepo),
+            Some(gist_data) => Ok(gist_data),
+        },
+    }
+}
+
+pub async fn get_gist_pin_impl(
+    cache: Cache<String, String>,
+    id: &String,
+) -> Result<Gist, PreparedTemplate> {
+    if id.is_empty() {
+        return Err(PreparedTemplate::FailedFindRepo);
+    }
+
+    let cache_key = format!("github:gist:{id}");
+    if let Some(cached) = cache.get(&cache_key).await {
+        let data = serde_json::from_str(&cached).unwrap();
+        return Ok(data);
+    }
+
+    let data = gist_get_data(id).await;
+    let result = match data {
+        Ok(data) => data,
+        Err(err) => return Err(err),
+    };
+
+    let cache_body = serde_json::to_string(&result).unwrap();
+    cache.insert(cache_key, cache_body).await;
+
+    Ok(result)
+}
+
+pub fn render_github_gist(
+    gist_id: String,
+    show_owner: bool,
+    theme: Theme,
+    repo_data: Result<Gist, PreparedTemplate>,
+) -> Response {
+    let raw_data = match repo_data {
+        Ok(data) => data,
+        Err(err) => return err.render(),
+    };
+
+    let mut language: Option<GHLangText> = None;
+    let mut repo = gist_id;
+    let username = raw_data.owner.login;
+    let gist_file = raw_data.files.iter().max_by_key(|file| file.size);
+    if let Some(file) = gist_file {
+        language = Some(GHLangText {
+            width: calc_width(&file.language.name, 13.0),
+            color: get_lang_color(&file.language.name),
+            name: file.language.name.clone(),
+        });
+        repo = file.name.clone();
+    }
+
+    let repo_text = if show_owner {
+        format!("{username}/{repo}")
+    } else {
+        repo.clone()
+    };
+
+    let rows = match raw_data.description {
+        Some(desc) => wrap_text(&desc, 13.0, 365),
+        None => vec!["No description provided".to_string()],
+    };
+
+    let stars_pretty = fmt_num(raw_data.stargazer_count as i32);
+    let stars = if raw_data.stargazer_count == 0 {
+        None
+    } else {
+        Some(&stars_pretty)
+    };
+    let forks_count = raw_data.forks.total_count as i32;
+    let forks_pretty = fmt_num(forks_count);
+    let forks = if forks_count == 0 {
+        None
+    } else {
+        Some(&forks_pretty)
+    };
+
+    let theme_data = theme.get_data();
+    let is_single_text_row = rows.len() == 1;
+    let template = GHPinTemplate {
+        name: username,
+        desc: repo,
+        repo_text,
+        icon: GHPinIcon::Gist,
+        rows,
+        stars,
+        forks,
+        is_single_text_row,
+        meta_counters_x_indent: if let Some(lang) = &language {
+            lang.width + 35
+        } else {
+            0
+        },
+        forks_counter_x_indent: if let Some(stars) = &stars {
+            calc_width(stars, 13.0) + 35
+        } else {
+            0
+        },
+        language,
+        theme_data,
+    };
+    let svg_template = templates::SVGTemplate(template);
+    templates::SVGTemplate::<GHPinTemplate>::into_response(svg_template)
+}
+
+pub async fn get_github_gist_pin(
+    State(cache): State<Cache<String, String>>,
+    Query(params): Query<GistParams>,
+) -> Response {
+    let theme = params.theme.unwrap_or(CONFIG.default_theme.clone());
+    let id = params.id;
+    let show_owner = if let Some(show_owner) = params.show_owner {
+        show_owner
+    } else {
+        false
+    };
+
+    let repo_data = get_gist_pin_impl(cache, &id).await;
+    render_github_gist(id, show_owner, theme, repo_data)
 }

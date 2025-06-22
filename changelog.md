@@ -1,6 +1,10 @@
+## 0.2.4
+
+- Added support Github Extra Pin Gist (Cyrillic supported!)
+
 ## 0.2.3
 
-- Added support Github Extra pin (Cyrillic supported!)
+- Added support Github Extra Pin Repository (Cyrillic supported!)
 
 ## 0.2.2
 

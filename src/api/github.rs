@@ -109,6 +109,49 @@ pub struct Repository {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct ViewerData<T> {
+    pub viewer: T,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct OptionGistData {
+    pub gist: Option<Gist>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct GistFileLanguage {
+    pub name: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct GistFile {
+    pub name: String,
+    pub language: GistFileLanguage,
+    pub size: u32,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GistForks {
+    pub total_count: u32,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct GistOwner {
+    pub login: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Gist {
+    pub description: Option<String>,
+    pub owner: GistOwner,
+    pub stargazer_count: u32,
+    pub forks: GistForks,
+    pub files: Vec<GistFile>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct SuccessResponse<T> {
     pub data: T,
 }
@@ -134,6 +177,7 @@ pub enum RestResponse<T> {
 
 pub type ActivityResponse = GraphQLResponse<OptionUserData<UserActivity>>;
 pub type LanguagesResponse = GraphQLResponse<OptionUserData<UserLanguages>>;
+pub type GistResponse = GraphQLResponse<ViewerData<OptionGistData>>;
 pub type RepositoryResponse = RestResponse<Repository>;
 
 pub fn get_headers() -> HeaderMap {
@@ -260,4 +304,32 @@ pub async fn get_activity(
 pub async fn get_repo(username: &String, repo_name: &String) -> Result<RepositoryResponse, Error> {
     let pathname = format!("/repos/{username}/{repo_name}");
     request_get_api::<RepositoryResponse>(&pathname).await
+}
+
+pub async fn get_gist(id: &String) -> Result<GistResponse, Error> {
+    let graphql_query = format!(
+        r###"query gistInfo {{
+            viewer {{
+                gist(name: "{id}") {{
+                    description
+                    owner {{
+                        login
+                    }}
+                    stargazerCount
+                    forks {{
+                        totalCount
+                    }}
+                    files {{
+                        name
+                        language {{
+                            name
+                        }}
+                        size
+                    }}
+                }}
+            }}
+        }}"###
+    );
+
+    request_graphql::<GistResponse>(&graphql_query).await
 }
