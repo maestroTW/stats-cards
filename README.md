@@ -91,7 +91,6 @@ List of planned cards:
 - [WIP] [Github Streak](https://github.com/DenverCoder1/github-readme-streak-stats)
 - [WIP] [Wakatime Streak](https://github.com/DenverCoder1/github-readme-streak-stats)
 - [WIP] [Github stats](https://github.com/anuraghazra/github-readme-stats)
-- [WIP] [GitHub Gist Pins](https://github.com/anuraghazra/github-readme-stats)
 
 \* links contain design examples
 
