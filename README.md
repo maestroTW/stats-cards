@@ -43,20 +43,18 @@ Current list of available cards:
 
   Endpoint: `/v1/pin/huggingface?username=openai&repo=whisper-large-v3-turbo&show_owner=true&type=model`
 
+   <img src="https://stats-cards.toil.cc/v1/pin/huggingface?username=openai&repo=whisper-large-v3-turbo&show_owner=true&type=model" alt="demo with show_owner" />
+
   Support select repo type with param `type`:
 
   - `model`
   - `dataset`
   - `space`
 
-   <img src="https://stats-cards.toil.cc/v1/pin/huggingface?username=openai&repo=whisper-large-v3-turbo&type=model" alt="demo" />
-
   Support show owner name with param `show_owner`:
 
   - `true`
   - `false` (default)
-
-   <img src="https://stats-cards.toil.cc/v1/pin/huggingface?username=openai&repo=whisper-large-v3-turbo&show_owner=true&type=model" alt="demo with show_owner" />
 
   \* Required `HUGGINGFACE_TOKEN` in `.env`
 
@@ -64,27 +62,27 @@ Current list of available cards:
 
   Endpoint: `/v1/pin/github?username=ilyhalight&repo=stats-cards&show_owner=true`
 
+   <img src="https://stats-cards.toil.cc/v1/pin/github?username=ilyhalight&repo=stats-cards&show_owner=true" alt="demo with show_owner" />
+
   Support show owner name with param `show_owner`:
 
   - `true`
   - `false` (default)
 
   **Cyrillic supported!**
-
-   <img src="https://stats-cards.toil.cc/v1/pin/github?username=ilyhalight&repo=stats-cards&show_owner=true" alt="demo with show_owner" />
 
 - Github Extra Pin Gist
 
   Endpoint: `/v1/pin/gist?id=6f47e86d2510bce28f8e7f42ae84c716&show_owner=true`
 
+   <img src="https://stats-cards.toil.cc/v1/pin/gist?id=6f47e86d2510bce28f8e7f42ae84c716&show_owner=true" alt="demo with show_owner" />
+
   Support show owner name with param `show_owner`:
 
   - `true`
   - `false` (default)
 
   **Cyrillic supported!**
-
-   <img src="https://stats-cards.toil.cc/v1/pin/gist?id=6f47e86d2510bce28f8e7f42ae84c716&show_owner=true" alt="demo with show_owner" />
 
 List of planned cards:
 
