@@ -206,7 +206,7 @@ impl Theme {
                 // focus
                 mono_icon: "#75715e".to_string(),
             },
-            // maestroTW
+            // by maestroTW
             // based on bear theme from https://github.com/anuraghazra/github-readme-stats/tree/master/themes
             Theme::BlackPink => ThemeData {
                 background: "#1f2023".to_string(),       
@@ -340,7 +340,7 @@ impl Theme {
                 // Class name
                 ActivityColor::VeryHigh => "#A6E22E".to_string(),
             },
-            // maestroTW
+            // by maestroTW
             // based on bear theme from https://github.com/anuraghazra/github-readme-stats/tree/master/themes
             Theme::BlackPink => match activity_color {
                 ActivityColor::Inactive => "#343434".to_string(),    
@@ -352,4 +352,5 @@ impl Theme {
         }
     }
 }
+
 
